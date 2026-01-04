@@ -159,12 +159,13 @@ function findAndHighlightText(searchText: string): boolean {
     }
   }
 
-  if (bestMatch) {
+  if (bestMatch !== null) {
+    const matchedElement = bestMatch as HTMLElement;
     console.log(
       "[DocNav] Content match:",
-      bestMatch.textContent?.substring(0, 80)
+      matchedElement.textContent?.substring(0, 80)
     );
-    scrollAndHighlightElement(bestMatch, scrollViewport);
+    scrollAndHighlightElement(matchedElement, scrollViewport);
     return true;
   }
 

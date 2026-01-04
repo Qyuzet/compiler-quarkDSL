@@ -1,0 +1,25 @@
+@gpu
+fn preprocess(x: [float]) -> [float] {
+    let result = [0.0, 0.0];
+    for i in 0..2 {
+        result[i] = x[i] * 2.0;
+    }
+    return result;
+}
+
+@gpu
+fn add_arrays(a: [float], b: [float]) -> [float] {
+    let result = [0.0, 0.0];
+    for i in 0..2 {
+        result[i] = a[i] + b[i];
+    }
+    return result;
+}
+
+fn main(input: [float]) -> [float] {
+    let doubled = preprocess(input);
+    let weights = [1.0, 2.0];
+    let final = add_arrays(doubled, weights);
+    return final;
+}
+

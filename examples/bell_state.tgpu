@@ -1,0 +1,13 @@
+fn h(q: int) -> void {
+    return;
+}
+
+fn cx(ctrl: int, target: int) -> void {
+    return;
+}
+
+fn main() -> int {
+    h(0);
+    cx(0, 1);
+    return 0;
+}

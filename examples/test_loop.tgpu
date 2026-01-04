@@ -1,0 +1,23 @@
+@gpu
+fn preprocess(x: [float]) -> [float] {
+    let result = [0.0, 0.0];
+    for i in 0..2 {
+        result[i] = x[i] * 2.0;
+    }
+    return result;
+}
+
+@quantum
+fn encode(data: [float]) -> int {
+    ry(0, data[0]);
+    ry(1, data[1]);
+    cx(0, 1);
+    return 0;
+}
+
+fn main(input: [float]) -> int {
+    let features = preprocess(input);
+    encode(features);
+    return 0;
+}
+

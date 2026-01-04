@@ -1,0 +1,80 @@
+// Hybrid VQE Example - Variational Quantum Eigensolver
+// Demonstrates GPU + Quantum hybrid workflow
+
+// GPU function: Initialize parameters
+@gpu
+fn init_params() -> [float] {
+    return [0.1, 0.2, 0.3, 0.4];
+}
+
+// Quantum function: Variational ansatz
+@quantum
+fn ansatz(params: [float]) -> int {
+    // Apply parameterized rotations
+    ry(0, params[0]);
+    ry(1, params[1]);
+    ry(2, params[2]);
+    ry(3, params[3]);
+    
+    // Entangling layer
+    cx(0, 1);
+    cx(1, 2);
+    cx(2, 3);
+    
+    return 0;
+}
+
+// Quantum function: Measure energy
+@quantum
+fn measure_hamiltonian() -> float {
+    // Measure all qubits
+    let m0 = measure(0);
+    let m1 = measure(1);
+    let m2 = measure(2);
+    let m3 = measure(3);
+    
+    // Compute expectation value (simplified)
+    return 0.5;
+}
+
+// GPU function: Optimize parameters
+@gpu
+fn adam_update(params: [float], gradient: [float]) -> [float] {
+    let lr = 0.01;
+    let updated = [0.0, 0.0, 0.0, 0.0];
+    
+    for i in 0..4 {
+        updated[i] = params[i] - lr * gradient[i];
+    }
+    
+    return updated;
+}
+
+// Classical orchestrator: Hybrid VQE loop
+fn vqe_main() -> [float] {
+    // Initialize on GPU
+    let params = init_params();
+    
+    // VQE optimization loop
+    for iter in 0..10 {
+        // Quantum: Run ansatz (auto GPU → Quantum conversion)
+        ansatz(params);
+        
+        // Quantum: Measure energy
+        let energy = measure_hamiltonian();
+        
+        // GPU: Compute gradient (simplified)
+        let gradient = [0.01, 0.01, 0.01, 0.01];
+        
+        // GPU: Update parameters (auto Quantum → GPU conversion)
+        params = adam_update(params, gradient);
+    }
+    
+    return params;
+}
+
+fn main() -> int {
+    let optimal_params = vqe_main();
+    return 0;
+}
+

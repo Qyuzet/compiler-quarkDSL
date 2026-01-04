@@ -1,0 +1,53 @@
+// Simple Hybrid Example
+// Demonstrates GPU + Quantum + Classical workflow
+
+// GPU function: Matrix multiplication
+@gpu
+fn gpu_matmul(a: [float], b: [float]) -> [float] {
+    let result = [0.0, 0.0, 0.0, 0.0];
+    for i in 0..4 {
+        result[i] = a[i] * b[i];
+    }
+    return result;
+}
+
+// Quantum function: Quantum encoding
+@quantum
+fn quantum_encode(data: [float]) -> int {
+    // Encode classical data into quantum state
+    ry(0, data[0]);
+    ry(1, data[1]);
+    cx(0, 1);
+    return 0;
+}
+
+// Quantum function: Quantum processing
+@quantum
+fn quantum_process() -> int {
+    h(0);
+    h(1);
+    cx(0, 1);
+    return measure(0);
+}
+
+// Classical orchestrator
+fn hybrid_pipeline(input: [float]) -> int {
+    // Step 1: GPU preprocessing
+    let weights = [1.0, 2.0, 3.0, 4.0];
+    let features = gpu_matmul(input, weights);
+    
+    // Step 2: Quantum encoding (auto: GPU → Quantum)
+    quantum_encode(features);
+    
+    // Step 3: Quantum processing
+    let result = quantum_process();
+    
+    return result;
+}
+
+fn main() -> int {
+    let data = [0.5, 0.3, 0.7, 0.2];
+    let output = hybrid_pipeline(data);
+    return output;
+}
+

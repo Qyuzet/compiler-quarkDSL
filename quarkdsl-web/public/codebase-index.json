@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-01-04T19:09:41.323Z",
+  "generatedAt": "2026-01-04T19:45:50.313Z",
   "chunks": [
     {
       "id": "docs/data-marshalling-design.md:1-80",
       "filePath": "docs/data-marshalling-design.md",
       "fileName": "data-marshalling-design.md",
-      "content": "# Data Marshalling Design - QuarkDSL\n\n**Purpose:** Automatic conversion between GPU and Quantum domains\n\n---\n\n## 🎯 Problem Statement\n\nWhen calling across domains, we need to convert data:\n\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] { ... }\n\n@quantum\nfn quantum_circuit(params: [float]) -> int { ... }\n\nfn main() {\n    let features = preprocess(data);      // GPU: [float]\n    let result = quantum_circuit(features); // Need: GPU → Quantum conversion!\n}\n```\n\n**Challenge:** GPU arrays ≠ Quantum states\n\n---\n\n## 📊 Data Type Mapping\n\n| QuarkDSL Type | GPU (WGSL) | Quantum (Qiskit) | Conversion Method |\n|---------------|------------|------------------|-------------------|\n| `[float]` | `array<f32>` | Angle encoding | `ry(qubit, angle)` |\n| `[int]` | `array<i32>` | Basis encoding | `x(qubit)` if bit=1 |\n| `tensor<float>` | `array<f32>` | Amplitude encoding | Statevector |\n| `qstate` | N/A | `QuantumCircuit` | Direct |\n| `int` (result) | `i32` | Measurement | `measure()` |\n\n---\n\n## 🔄 Conversion Strategies\n\n### **1. GPU → Quantum: Angle Encoding** (Default)\n\n**Use case:** Encode classical features into quantum states\n\n**Method:** Each float value → rotation angle on qubit\n\n```python\n# GPU output: [0.5, 0.3, 0.7, 0.2]\n# Quantum encoding:\ncircuit.ry(0.5, qr[0])  # qubit 0 ← 0.5\ncircuit.ry(0.3, qr[1])  # qubit 1 ← 0.3\ncircuit.ry(0.7, qr[2])  # qubit 2 ← 0.7\ncircuit.ry(0.2, qr[3])  # qubit 3 ← 0.2\n```\n\n**Pros:**\n- ✅ Simple and efficient\n- ✅ Works for any float values\n- ✅ Common in VQE/QAOA\n\n**Cons:**\n- ⚠️ Requires N qubits for N values\n\n---\n\n### **2. GPU → Quantum: Amplitude Encoding**\n\n**Use case:** Encode large vectors efficiently\n\n**Method:** Encode N values into √N qubits using amplitudes\n\n```python\n# GPU output: [0.5, 0.5, 0.5, 0.5]  # 4 values\n# Quantum encoding: 2 qubits (2^2 = 4 amplitudes)\ncircuit.initialize([0.5, 0.5, 0.5, 0.5], qr)\n```\n\n**Pros:**\n- ✅ Exponentially efficient (N values → log₂(N) qubits)",
+      "content": "# Data Marshalling Design - QuarkDSL\n\n**Purpose:** Automatic conversion between GPU and Quantum domains\n\n---\n\n## 🎯 Problem Statement\n\nWhen calling across domains, we need to convert data:\n\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] { ... }\n\n@quantum\nfn quantum_circuit(params: [float]) -> int { ... }\n\nfn main() {\n    let features = preprocess(data);      // GPU: [float]\n    let result = quantum_circuit(features); // Need: GPU → Quantum conversion!\n}\n```\n\n**Challenge:** GPU arrays ≠ Quantum states\n\n---\n\n## 📊 Data Type Mapping\n\n| QuarkDSL Type   | GPU (WGSL)   | Quantum (Qiskit)   | Conversion Method   |\n| --------------- | ------------ | ------------------ | ------------------- |\n| `[float]`       | `array<f32>` | Angle encoding     | `ry(qubit, angle)`  |\n| `[int]`         | `array<i32>` | Basis encoding     | `x(qubit)` if bit=1 |\n| `tensor<float>` | `array<f32>` | Amplitude encoding | Statevector         |\n| `qstate`        | N/A          | `QuantumCircuit`   | Direct              |\n| `int` (result)  | `i32`        | Measurement        | `measure()`         |\n\n---\n\n## 🔄 Conversion Strategies\n\n### **1. GPU → Quantum: Angle Encoding** (Default)\n\n**Use case:** Encode classical features into quantum states\n\n**Method:** Each float value → rotation angle on qubit\n\n```python\n# GPU output: [0.5, 0.3, 0.7, 0.2]\n# Quantum encoding:\ncircuit.ry(0.5, qr[0])  # qubit 0 ← 0.5\ncircuit.ry(0.3, qr[1])  # qubit 1 ← 0.3\ncircuit.ry(0.7, qr[2])  # qubit 2 ← 0.7\ncircuit.ry(0.2, qr[3])  # qubit 3 ← 0.2\n```\n\n**Pros:**\n\n- ✅ Simple and efficient\n- ✅ Works for any float values\n- ✅ Common in VQE/QAOA\n\n**Cons:**\n\n- ⚠️ Requires N qubits for N values\n\n---\n\n### **2. GPU → Quantum: Amplitude Encoding**\n\n**Use case:** Encode large vectors efficiently\n\n**Method:** Encode N values into √N qubits using amplitudes\n\n```python\n# GPU output: [0.5, 0.5, 0.5, 0.5]  # 4 values\n# Quantum encoding: 2 qubits (2^2 = 4 amplitudes)\ncircuit.initialize([0.5, 0.5, 0.5, 0.5], qr)\n```\n",
       "type": "markdown",
       "keywords": [
         "data",
@@ -31,7 +31,7 @@
       "id": "docs/data-marshalling-design.md:71-150",
       "filePath": "docs/data-marshalling-design.md",
       "fileName": "data-marshalling-design.md",
-      "content": "**Method:** Encode N values into √N qubits using amplitudes\n\n```python\n# GPU output: [0.5, 0.5, 0.5, 0.5]  # 4 values\n# Quantum encoding: 2 qubits (2^2 = 4 amplitudes)\ncircuit.initialize([0.5, 0.5, 0.5, 0.5], qr)\n```\n\n**Pros:**\n- ✅ Exponentially efficient (N values → log₂(N) qubits)\n- ✅ Good for large datasets\n\n**Cons:**\n- ⚠️ Requires normalization (sum of squares = 1)\n- ⚠️ More complex\n\n---\n\n### **3. Quantum → GPU: Measurement Extraction**\n\n**Use case:** Get quantum results back to classical\n\n**Method:** Measure qubits → extract counts → convert to array\n\n```python\n# Quantum measurement\ncircuit.measure(qr, cr)\njob = backend.run(circuit, shots=1024)\ncounts = job.result().get_counts()\n\n# Extract to GPU array\n# counts = {'00': 512, '01': 256, '10': 128, '11': 128}\n# → [512, 256, 128, 128]\n```\n\n**Pros:**\n- ✅ Standard quantum workflow\n- ✅ Preserves probabilistic nature\n\n**Cons:**\n- ⚠️ Requires multiple shots\n- ⚠️ Lossy (quantum → classical)\n\n---\n\n## 🏗️ Implementation Strategy\n\n### **Phase 5A: Detect Cross-Domain Calls** ✅ (Already done!)\n\nWe already detect cross-domain calls in typecheck:\n```\nINFO: Cross-domain call from Classical to Gpu function 'gpu_matmul'\nINFO: Cross-domain call from Classical to Quantum function 'quantum_encode'\n```\n\n### **Phase 5B: Generate Conversion Code**\n\n**In IR lowering (`src/middle/lower.rs`):**\n\nWhen we see a cross-domain call, insert conversion instructions:\n\n```rust\n// Before (current):\n%4 = call quantum_encode(%3)\n\n// After (with conversion):\n%3_converted = gpu_to_quantum(%3)  // NEW: Conversion instruction\n%4 = call quantum_encode(%3_converted)\n```\n\n### **Phase 5C: Backend Code Generation**\n\n**GPU Backend (`src/backend/wgsl.rs`):**\n- Generate WGSL compute shader\n- Export results to buffer\n- Return to Python orchestrator\n\n**Quantum Backend (`src/backend/quantum.rs`):**\n- Generate Qiskit circuit\n- Add encoding gates (ry, initialize)",
+      "content": "**Use case:** Encode large vectors efficiently\n\n**Method:** Encode N values into √N qubits using amplitudes\n\n```python\n# GPU output: [0.5, 0.5, 0.5, 0.5]  # 4 values\n# Quantum encoding: 2 qubits (2^2 = 4 amplitudes)\ncircuit.initialize([0.5, 0.5, 0.5, 0.5], qr)\n```\n\n**Pros:**\n\n- ✅ Exponentially efficient (N values → log₂(N) qubits)\n- ✅ Good for large datasets\n\n**Cons:**\n\n- ⚠️ Requires normalization (sum of squares = 1)\n- ⚠️ More complex\n\n---\n\n### **3. Quantum → GPU: Measurement Extraction**\n\n**Use case:** Get quantum results back to classical\n\n**Method:** Measure qubits → extract counts → convert to array\n\n```python\n# Quantum measurement\ncircuit.measure(qr, cr)\njob = backend.run(circuit, shots=1024)\ncounts = job.result().get_counts()\n\n# Extract to GPU array\n# counts = {'00': 512, '01': 256, '10': 128, '11': 128}\n# → [512, 256, 128, 128]\n```\n\n**Pros:**\n\n- ✅ Standard quantum workflow\n- ✅ Preserves probabilistic nature\n\n**Cons:**\n\n- ⚠️ Requires multiple shots\n- ⚠️ Lossy (quantum → classical)\n\n---\n\n## 🏗️ Implementation Strategy\n\n### **Phase 5A: Detect Cross-Domain Calls** ✅ (Already done!)\n\nWe already detect cross-domain calls in typecheck:\n\n```\nINFO: Cross-domain call from Classical to Gpu function 'gpu_matmul'\nINFO: Cross-domain call from Classical to Quantum function 'quantum_encode'\n```\n\n### **Phase 5B: Generate Conversion Code**\n\n**In IR lowering (`src/middle/lower.rs`):**\n\nWhen we see a cross-domain call, insert conversion instructions:\n\n```rust\n// Before (current):\n%4 = call quantum_encode(%3)\n\n// After (with conversion):\n%3_converted = gpu_to_quantum(%3)  // NEW: Conversion instruction\n%4 = call quantum_encode(%3_converted)\n```\n\n### **Phase 5C: Backend Code Generation**\n\n**GPU Backend (`src/backend/wgsl.rs`):**",
       "type": "markdown",
       "keywords": [
         "data",
@@ -40,19 +40,15 @@
         "wgsl",
         "quantum",
         "gpu",
-        "shader",
         "type",
         "check",
         "ir",
         "lower",
         "backend",
         "middle",
-        "orchestrator",
         "function",
         "qubit",
-        "gate",
-        "measure",
-        "buffer"
+        "measure"
       ],
       "startLine": 71,
       "endLine": 150
@@ -61,7 +57,7 @@
       "id": "docs/data-marshalling-design.md:141-220",
       "filePath": "docs/data-marshalling-design.md",
       "fileName": "data-marshalling-design.md",
-      "content": "### **Phase 5C: Backend Code Generation**\n\n**GPU Backend (`src/backend/wgsl.rs`):**\n- Generate WGSL compute shader\n- Export results to buffer\n- Return to Python orchestrator\n\n**Quantum Backend (`src/backend/quantum.rs`):**\n- Generate Qiskit circuit\n- Add encoding gates (ry, initialize)\n- Add measurement\n- Return to Python orchestrator\n\n**Python Orchestrator (NEW: `src/backend/orchestrator.rs`):**\n- Generate Python script that:\n  1. Runs GPU code (WebGPU)\n  2. Extracts GPU results\n  3. Encodes into quantum circuit\n  4. Runs quantum code (Qiskit)\n  5. Extracts quantum results\n  6. Returns final result\n\n---\n\n## 📝 Example: Full Pipeline\n\n### **QuarkDSL Code:**\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] {\n    let result = [0.0, 0.0, 0.0, 0.0];\n    for i in 0..4 {\n        result[i] = data[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn quantum_process(params: [float]) -> int {\n    ry(0, params[0]);\n    ry(1, params[1]);\n    cx(0, 1);\n    return measure(0);\n}\n\nfn main() -> int {\n    let data = [0.5, 0.3, 0.7, 0.2];\n    let features = preprocess(data);        // GPU\n    let result = quantum_process(features); // GPU → Quantum\n    return result;\n}\n```\n\n### **Generated Python Orchestrator:**\n```python\nimport numpy as np\nfrom qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister\nfrom qiskit_ibm_runtime import QiskitRuntimeService\n\n# Step 1: Run GPU code\ndef preprocess_gpu(data):\n    # WGSL shader execution (WebGPU)\n    result = data * 2.0  # Simplified\n    return result\n\n# Step 2: GPU → Quantum conversion\ndef encode_to_quantum(params):\n    qr = QuantumRegister(2, 'q')\n    cr = ClassicalRegister(2, 'c')\n    circuit = QuantumCircuit(qr, cr)\n    \n    # Angle encoding\n    circuit.ry(params[0], qr[0])\n    circuit.ry(params[1], qr[1])\n    circuit.cx(qr[0], qr[1])\n    circuit.measure(qr[0], cr[0])\n    \n    return circuit\n\n# Step 3: Run quantum code",
+      "content": "%4 = call quantum_encode(%3)\n\n// After (with conversion):\n%3_converted = gpu_to_quantum(%3)  // NEW: Conversion instruction\n%4 = call quantum_encode(%3_converted)\n```\n\n### **Phase 5C: Backend Code Generation**\n\n**GPU Backend (`src/backend/wgsl.rs`):**\n\n- Generate WGSL compute shader\n- Export results to buffer\n- Return to Python orchestrator\n\n**Quantum Backend (`src/backend/quantum.rs`):**\n\n- Generate Qiskit circuit\n- Add encoding gates (ry, initialize)\n- Add measurement\n- Return to Python orchestrator\n\n**Python Orchestrator (NEW: `src/backend/orchestrator.rs`):**\n\n- Generate Python script that:\n  1. Runs GPU code (WebGPU)\n  2. Extracts GPU results\n  3. Encodes into quantum circuit\n  4. Runs quantum code (Qiskit)\n  5. Extracts quantum results\n  6. Returns final result\n\n---\n\n## 📝 Example: Full Pipeline\n\n### **QuarkDSL Code:**\n\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] {\n    let result = [0.0, 0.0, 0.0, 0.0];\n    for i in 0..4 {\n        result[i] = data[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn quantum_process(params: [float]) -> int {\n    ry(0, params[0]);\n    ry(1, params[1]);\n    cx(0, 1);\n    return measure(0);\n}\n\nfn main() -> int {\n    let data = [0.5, 0.3, 0.7, 0.2];\n    let features = preprocess(data);        // GPU\n    let result = quantum_process(features); // GPU → Quantum\n    return result;\n}\n```\n\n### **Generated Python Orchestrator:**\n\n```python\nimport numpy as np\nfrom qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister\nfrom qiskit_ibm_runtime import QiskitRuntimeService\n\n# Step 1: Run GPU code\ndef preprocess_gpu(data):\n    # WGSL shader execution (WebGPU)\n    result = data * 2.0  # Simplified\n    return result\n\n# Step 2: GPU → Quantum conversion\ndef encode_to_quantum(params):\n    qr = QuantumRegister(2, 'q')",
       "type": "markdown",
       "keywords": [
         "data",
@@ -86,25 +82,30 @@
       "endLine": 220
     },
     {
-      "id": "docs/data-marshalling-design.md:211-260",
+      "id": "docs/data-marshalling-design.md:211-284",
       "filePath": "docs/data-marshalling-design.md",
       "fileName": "data-marshalling-design.md",
-      "content": "    \n    # Angle encoding\n    circuit.ry(params[0], qr[0])\n    circuit.ry(params[1], qr[1])\n    circuit.cx(qr[0], qr[1])\n    circuit.measure(qr[0], cr[0])\n    \n    return circuit\n\n# Step 3: Run quantum code\ndef quantum_process(circuit):\n    service = QiskitRuntimeService()\n    backend = service.backend(\"ibm_brisbane\")\n    job = backend.run(circuit, shots=1024)\n    counts = job.result().get_counts()\n    \n    # Extract result (most common measurement)\n    result = int(max(counts, key=counts.get)[0])\n    return result\n\n# Main orchestration\ndef main():\n    data = np.array([0.5, 0.3, 0.7, 0.2])\n    \n    # GPU execution\n    features = preprocess_gpu(data)\n    \n    # Quantum execution\n    circuit = encode_to_quantum(features)\n    result = quantum_process(circuit)\n    \n    return result\n\nif __name__ == \"__main__\":\n    print(main())\n```\n\n---\n\n## 🎯 Implementation Plan\n\n1. **✅ Phase 5A:** Detect cross-domain calls (DONE)\n2. **[ ] Phase 5B:** Add conversion IR instructions\n3. **[ ] Phase 5C:** Generate conversion code in backends\n4. **[ ] Phase 5D:** Generate Python orchestrator\n5. **[ ] Phase 5E:** Test end-to-end\n\n**Next:** Implement Phase 5B - Add conversion instructions to IR!\n\n",
+      "content": "\n# Step 1: Run GPU code\ndef preprocess_gpu(data):\n    # WGSL shader execution (WebGPU)\n    result = data * 2.0  # Simplified\n    return result\n\n# Step 2: GPU → Quantum conversion\ndef encode_to_quantum(params):\n    qr = QuantumRegister(2, 'q')\n    cr = ClassicalRegister(2, 'c')\n    circuit = QuantumCircuit(qr, cr)\n\n    # Angle encoding\n    circuit.ry(params[0], qr[0])\n    circuit.ry(params[1], qr[1])\n    circuit.cx(qr[0], qr[1])\n    circuit.measure(qr[0], cr[0])\n\n    return circuit\n\n# Step 3: Run quantum code\ndef quantum_process(circuit):\n    service = QiskitRuntimeService()\n    backend = service.backend(\"ibm_brisbane\")\n    job = backend.run(circuit, shots=1024)\n    counts = job.result().get_counts()\n\n    # Extract result (most common measurement)\n    result = int(max(counts, key=counts.get)[0])\n    return result\n\n# Main orchestration\ndef main():\n    data = np.array([0.5, 0.3, 0.7, 0.2])\n\n    # GPU execution\n    features = preprocess_gpu(data)\n\n    # Quantum execution\n    circuit = encode_to_quantum(features)\n    result = quantum_process(circuit)\n\n    return result\n\nif __name__ == \"__main__\":\n    print(main())\n```\n\n---\n\n## Implementation Status\n\nAll phases are complete:\n\n1. **Phase 5A:** Detect cross-domain calls - COMPLETE\n2. **Phase 5B:** Add conversion IR instructions - COMPLETE\n3. **Phase 5C:** Generate conversion code in backends - COMPLETE\n4. **Phase 5D:** Generate Python orchestrator - COMPLETE\n5. **Phase 5E:** Test end-to-end - COMPLETE\n6. **Phase 6:** TypeScript VM with quantum simulation - COMPLETE\n\n### TypeScript VM Implementation\n\nThe TypeScript VM provides an alternative execution path with built-in quantum simulation:\n\n- Stack-based bytecode interpreter\n- 8-qubit quantum state vector simulator\n- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli\n- Probabilistic measurement with state collapse\n- Web playground for interactive development\n\nSee `quarkdsl-web/lib/vm/` for implementation details.\n",
       "type": "markdown",
       "keywords": [
         "data",
         "marshalling",
         "design",
+        "wgsl",
         "quantum",
         "gpu",
+        "shader",
+        "type",
         "ir",
         "backend",
         "orchestrator",
         "if",
+        "qubit",
+        "gate",
         "measure"
       ],
       "startLine": 211,
-      "endLine": 260
+      "endLine": 284
     },
     {
       "id": "docs/hybrid-design.md:1-80",
@@ -144,7 +145,7 @@
       "id": "docs/hybrid-design.md:71-150",
       "filePath": "docs/hybrid-design.md",
       "fileName": "hybrid-design.md",
-      "content": "\n### GPU Operations (WGSL backend)\n\n```rust\n@gpu fn matmul(a: tensor<float>, b: tensor<float>) -> tensor<float>\n@gpu fn softmax(x: tensor<float>) -> tensor<float>\n@gpu fn relu(x: tensor<float>) -> tensor<float>\n@gpu fn reduce_sum(x: tensor<float>) -> float\n```\n\n### Quantum Operations (Qiskit backend)\n\n```rust\n@quantum fn h(q: qubit) -> qubit           // Hadamard\n@quantum fn cx(ctrl: qubit, targ: qubit)   // CNOT\n@quantum fn ry(q: qubit, theta: float)     // RY rotation\n@quantum fn measure(q: qubit) -> int       // Measurement\n```\n\n### Hybrid Algorithms\n\n```rust\n// Variational Quantum Eigensolver\nfn vqe(hamiltonian: tensor<float>, ansatz: fn(tensor<float>) -> qstate) -> float {\n    let params = init_params_gpu();\n    for i in 0..100 {\n        let energy = vqe_step(params, hamiltonian, ansatz);\n        params = adam_update_gpu(params, energy);\n    }\n    return energy;\n}\n\n// Quantum Approximate Optimization Algorithm\nfn qaoa(cost_hamiltonian: tensor<float>, layers: int) -> tensor<float> {\n    let params = init_params_gpu();\n    for i in 0..100 {\n        let cost = qaoa_step(params, cost_hamiltonian, layers);\n        params = optimize_gpu(params, cost);\n    }\n    return params;\n}\n```\n\n## 4. Example: VQE (Variational Quantum Eigensolver)\n\n### QuarkDSL Code\n\n```rust\n@quantum\nfn ansatz(params: [float], qubits: [qubit]) -> [qubit] {\n    for i in 0..len(qubits) {\n        ry(qubits[i], params[i]);\n    }\n    for i in 0..len(qubits)-1 {\n        cx(qubits[i], qubits[i+1]);\n    }\n    return qubits;\n}\n\n@quantum\nfn measure_energy(qubits: [qubit], hamiltonian: [float]) -> float {\n    let counts = measure_all(qubits);\n    return expectation_value(counts, hamiltonian);\n}\n\n@gpu\nfn optimize_params(params: tensor<float>, gradient: tensor<float>) -> tensor<float> {\n    let lr = 0.01;\n    return params - lr * gradient;\n}\n\nfn vqe_main() -> tensor<float> {\n    // Initialize on GPU\n    let params = init_random_gpu(4);\n    let hamiltonian = [1.0, 0.5, 0.5, 1.0];\n    \n    // Optimization loop\n    for iter in 0..100 {\n        // GPU → Quantum (automatic)\n        let qubits = ansatz(params, [q0, q1, q2, q3]);",
+      "content": "\n### GPU Operations (WGSL backend)\n\n```rust\n@gpu fn matmul(a: tensor<float>, b: tensor<float>) -> tensor<float>\n@gpu fn softmax(x: tensor<float>) -> tensor<float>\n@gpu fn relu(x: tensor<float>) -> tensor<float>\n@gpu fn reduce_sum(x: tensor<float>) -> float\n```\n\n### Quantum Operations (Qiskit backend)\n\n```rust\n@quantum fn h(q: qubit) -> qubit           // Hadamard\n@quantum fn cx(ctrl: qubit, targ: qubit)   // CNOT\n@quantum fn ry(q: qubit, theta: float)     // RY rotation\n@quantum fn measure(q: qubit) -> int       // Measurement\n```\n\n### Hybrid Algorithms\n\n```rust\n// Variational Quantum Eigensolver\nfn vqe(hamiltonian: tensor<float>, ansatz: fn(tensor<float>) -> qstate) -> float {\n    let params = init_params_gpu();\n    for i in 0..100 {\n        let energy = vqe_step(params, hamiltonian, ansatz);\n        params = adam_update_gpu(params, energy);\n    }\n    return energy;\n}\n\n// Quantum Approximate Optimization Algorithm\nfn qaoa(cost_hamiltonian: tensor<float>, layers: int) -> tensor<float> {\n    let params = init_params_gpu();\n    for i in 0..100 {\n        let cost = qaoa_step(params, cost_hamiltonian, layers);\n        params = optimize_gpu(params, cost);\n    }\n    return params;\n}\n```\n\n## 4. Example: VQE (Variational Quantum Eigensolver)\n\n### QuarkDSL Code\n\n```rust\n@quantum\nfn ansatz(params: [float], qubits: [qubit]) -> [qubit] {\n    for i in 0..len(qubits) {\n        ry(qubits[i], params[i]);\n    }\n    for i in 0..len(qubits)-1 {\n        cx(qubits[i], qubits[i+1]);\n    }\n    return qubits;\n}\n\n@quantum\nfn measure_energy(qubits: [qubit], hamiltonian: [float]) -> float {\n    let counts = measure_all(qubits);\n    return expectation_value(counts, hamiltonian);\n}\n\n@gpu\nfn optimize_params(params: tensor<float>, gradient: tensor<float>) -> tensor<float> {\n    let lr = 0.01;\n    return params - lr * gradient;\n}\n\nfn vqe_main() -> tensor<float> {\n    // Initialize on GPU\n    let params = init_random_gpu(4);\n    let hamiltonian = [1.0, 0.5, 0.5, 1.0];\n\n    // Optimization loop\n    for iter in 0..100 {\n        // GPU → Quantum (automatic)\n        let qubits = ansatz(params, [q0, q1, q2, q3]);",
       "type": "markdown",
       "keywords": [
         "hybrid",
@@ -178,7 +179,7 @@
       "id": "docs/hybrid-design.md:141-220",
       "filePath": "docs/hybrid-design.md",
       "fileName": "hybrid-design.md",
-      "content": "\nfn vqe_main() -> tensor<float> {\n    // Initialize on GPU\n    let params = init_random_gpu(4);\n    let hamiltonian = [1.0, 0.5, 0.5, 1.0];\n    \n    // Optimization loop\n    for iter in 0..100 {\n        // GPU → Quantum (automatic)\n        let qubits = ansatz(params, [q0, q1, q2, q3]);\n        \n        // Quantum execution\n        let energy = measure_energy(qubits, hamiltonian);\n        \n        // Quantum → GPU (automatic)\n        let grad = compute_gradient_gpu(energy);\n        \n        // GPU optimization\n        params = optimize_params(params, grad);\n    }\n    \n    return params;\n}\n```\n\n### Generated Code (Hybrid Orchestration)\n\n```python\nimport torch\nfrom qiskit import QuantumCircuit, execute\n\ndef vqe_main():\n    # GPU initialization\n    params = torch.randn(4).cuda()\n    hamiltonian = torch.tensor([1.0, 0.5, 0.5, 1.0]).cuda()\n    \n    for iter in range(100):\n        # AUTO: GPU → Quantum conversion\n        params_cpu = params.cpu().numpy()\n        \n        # Quantum execution\n        circuit = QuantumCircuit(4)\n        for i in range(4):\n            circuit.ry(params_cpu[i], i)\n        for i in range(3):\n            circuit.cx(i, i+1)\n        \n        result = execute(circuit, backend).result()\n        energy_cpu = compute_expectation(result, hamiltonian.cpu().numpy())\n        \n        # AUTO: Quantum → GPU conversion\n        energy = torch.tensor(energy_cpu).cuda()\n        \n        # GPU optimization\n        grad = torch.autograd.grad(energy, params)[0]\n        params = params - 0.01 * grad\n    \n    return params\n```\n\n## 5. Compilation Strategy\n\n### Domain Detection\n\n1. Parse `@gpu` and `@quantum` annotations\n2. Build call graph with domain information\n3. Detect cross-domain calls\n4. Insert conversion nodes in IR\n\n### Code Generation\n\n1. **GPU functions** → Generate WGSL compute shaders\n2. **Quantum functions** → Generate Qiskit circuits\n3. **Hybrid orchestrator** → Generate Python glue code with:\n   - GPU execution (via WebGPU or PyTorch)\n   - Quantum execution (via Qiskit)\n   - Automatic data marshalling\n\n### Optimization\n",
+      "content": "\nfn vqe_main() -> tensor<float> {\n    // Initialize on GPU\n    let params = init_random_gpu(4);\n    let hamiltonian = [1.0, 0.5, 0.5, 1.0];\n\n    // Optimization loop\n    for iter in 0..100 {\n        // GPU → Quantum (automatic)\n        let qubits = ansatz(params, [q0, q1, q2, q3]);\n\n        // Quantum execution\n        let energy = measure_energy(qubits, hamiltonian);\n\n        // Quantum → GPU (automatic)\n        let grad = compute_gradient_gpu(energy);\n\n        // GPU optimization\n        params = optimize_params(params, grad);\n    }\n\n    return params;\n}\n```\n\n### Generated Code (Hybrid Orchestration)\n\n```python\nimport torch\nfrom qiskit import QuantumCircuit, execute\n\ndef vqe_main():\n    # GPU initialization\n    params = torch.randn(4).cuda()\n    hamiltonian = torch.tensor([1.0, 0.5, 0.5, 1.0]).cuda()\n\n    for iter in range(100):\n        # AUTO: GPU → Quantum conversion\n        params_cpu = params.cpu().numpy()\n\n        # Quantum execution\n        circuit = QuantumCircuit(4)\n        for i in range(4):\n            circuit.ry(params_cpu[i], i)\n        for i in range(3):\n            circuit.cx(i, i+1)\n\n        result = execute(circuit, backend).result()\n        energy_cpu = compute_expectation(result, hamiltonian.cpu().numpy())\n\n        # AUTO: Quantum → GPU conversion\n        energy = torch.tensor(energy_cpu).cuda()\n\n        # GPU optimization\n        grad = torch.autograd.grad(energy, params)[0]\n        params = params - 0.01 * grad\n\n    return params\n```\n\n## 5. Compilation Strategy\n\n### Domain Detection\n\n1. Parse `@gpu` and `@quantum` annotations\n2. Build call graph with domain information\n3. Detect cross-domain calls\n4. Insert conversion nodes in IR\n\n### Code Generation\n\n1. **GPU functions** - Generate WGSL compute shaders\n2. **Quantum functions** - Generate Qiskit circuits\n3. **Hybrid orchestrator** - Generate Python glue code with:\n   - GPU execution (via WebGPU or PyTorch)\n   - Quantum execution (via Qiskit)\n   - Automatic data marshalling\n\n### Optimization\n",
       "type": "markdown",
       "keywords": [
         "hybrid",
@@ -201,10 +202,10 @@
       "endLine": 220
     },
     {
-      "id": "docs/hybrid-design.md:211-235",
+      "id": "docs/hybrid-design.md:211-248",
       "filePath": "docs/hybrid-design.md",
       "fileName": "hybrid-design.md",
-      "content": "\n1. **GPU functions** → Generate WGSL compute shaders\n2. **Quantum functions** → Generate Qiskit circuits\n3. **Hybrid orchestrator** → Generate Python glue code with:\n   - GPU execution (via WebGPU or PyTorch)\n   - Quantum execution (via Qiskit)\n   - Automatic data marshalling\n\n### Optimization\n\n1. **Fusion**: Combine consecutive GPU operations\n2. **Batching**: Batch multiple quantum circuits\n3. **Caching**: Cache conversion results when possible\n4. **Pipelining**: Overlap GPU and Quantum execution\n\n## 6. Next Steps\n\n1. Extend lexer with `@gpu`, `@quantum` tokens\n2. Extend parser with annotation support\n3. Add `tensor<T>` and `qstate` types to AST\n4. Extend type checker for cross-domain calls\n5. Extend IR with domain markers\n6. Implement hybrid code generation\n\n",
+      "content": "\n1. **GPU functions** - Generate WGSL compute shaders\n2. **Quantum functions** - Generate Qiskit circuits\n3. **Hybrid orchestrator** - Generate Python glue code with:\n   - GPU execution (via WebGPU or PyTorch)\n   - Quantum execution (via Qiskit)\n   - Automatic data marshalling\n\n### Optimization\n\n1. **Fusion**: Combine consecutive GPU operations\n2. **Batching**: Batch multiple quantum circuits\n3. **Caching**: Cache conversion results when possible\n4. **Pipelining**: Overlap GPU and Quantum execution\n\n## 6. Implementation Status\n\nAll features are complete:\n\n1. Lexer with `@gpu`, `@quantum` tokens - COMPLETE\n2. Parser with annotation support - COMPLETE\n3. `tensor<T>` and `qstate` types in AST - COMPLETE\n4. Type checker for cross-domain calls - COMPLETE\n5. IR with domain markers - COMPLETE\n6. Hybrid code generation - COMPLETE\n7. TypeScript VM with quantum simulation - COMPLETE\n\n### TypeScript VM\n\nThe TypeScript VM provides an alternative execution path:\n\n- Stack-based bytecode interpreter\n- 8-qubit quantum state vector simulator\n- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli\n- Web playground for interactive development\n\nSee `quarkdsl-web/lib/vm/` for implementation details.\n",
       "type": "markdown",
       "keywords": [
         "hybrid",
@@ -221,10 +222,12 @@
         "check",
         "ir",
         "orchestrator",
-        "function"
+        "function",
+        "qubit",
+        "gate"
       ],
       "startLine": 211,
-      "endLine": 235
+      "endLine": 248
     },
     {
       "id": "docs/IBM_QUANTUM_INTEGRATION.md:1-80",
@@ -311,7 +314,7 @@
       "id": "docs/PROJECT_PROPOSAL.md:1-80",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "# QuarkDSL Project Proposal\n\n**Course:** COMP6062001 – Compilation Techniques  \n**Project:** QuarkDSL - Unified Hybrid Quantum-Classical Compiler  \n**Week:** 10 Milestone Submission  \n**Date:** [Insert Date]\n\n---\n\n## Table of Contents\n\n1. [Introduction](#1-introduction)\n2. [Problem Statement](#2-problem-statement)\n3. [Proposed Solution](#3-proposed-solution)\n4. [Language Design](#4-language-design)\n5. [Compiler Architecture](#5-compiler-architecture)\n6. [Implementation Details](#6-implementation-details)\n7. [Progress Report](#7-progress-report)\n8. [Challenges & Solutions](#8-challenges--solutions)\n9. [Timeline & Next Steps](#9-timeline--next-steps)\n10. [References](#10-references)\n\n---\n\n## 1. Introduction\n\n### 1.1 Background\n\nQuantum computing is emerging as a powerful paradigm for solving complex computational problems. However, practical quantum algorithms often require hybrid workflows that combine:\n- **Classical preprocessing** (data preparation, feature extraction)\n- **Quantum computation** (quantum algorithms, circuit execution)\n- **Classical postprocessing** (result analysis, optimization)\n\nCurrent tools require developers to manually orchestrate these workflows using multiple frameworks (PyTorch, Qiskit, NumPy), leading to:\n- Manual data conversion between frameworks\n- Error-prone boilerplate code\n- No cross-domain optimization\n- Steep learning curve\n\n### 1.2 Motivation\n\nQuarkDSL addresses this problem by providing a **unified language** for hybrid quantum-classical programming with:\n- Domain annotations for execution targeting\n- Automatic data marshalling between GPU and quantum domains\n- Cross-domain type checking\n- Multi-backend code generation\n\nThis project demonstrates advanced compiler techniques while solving a real research problem in quantum computing.\n\n---\n\n## 2. Problem Statement\n\n### 2.1 Current Approach\n\nHybrid quantum-classical workflows currently require:\n\n```python\n# Example: Manual hybrid workflow\nimport torch\nfrom qiskit import QuantumCircuit, execute, Aer\n\n# 1. GPU preprocessing\ndata = torch.randn(100).cuda()\nfeatures = neural_network(data)\n\n# 2. Manual conversion - TEDIOUS!\nfeatures_cpu = features.cpu().numpy()\n\n# 3. Quantum encoding - MANUAL!\ncircuit = QuantumCircuit(4)\nfor i, val in enumerate(features_cpu[:4]):\n    circuit.ry(val, i)\ncircuit.cx(0, 1)\n\n# 4. Execution\nbackend = Aer.get_backend('qasm_simulator')\njob = execute(circuit, backend, shots=1024)\nresult = job.result()\n",
+      "content": "# QuarkDSL Project Proposal\n\n**Course:** COMP6062001 – Compilation Techniques  \n**Project:** QuarkDSL - Unified Hybrid Quantum-Classical Compiler  \n**Week:** 10 Milestone Submission  \n**Date:** [Insert Date]\n\n---\n\n## Table of Contents\n\n1. [Introduction](#1-introduction)\n2. [Problem Statement](#2-problem-statement)\n3. [Proposed Solution](#3-proposed-solution)\n4. [Language Design](#4-language-design)\n5. [Compiler Architecture](#5-compiler-architecture)\n6. [Implementation Details](#6-implementation-details)\n7. [Progress Report](#7-progress-report)\n8. [Challenges & Solutions](#8-challenges--solutions)\n9. [Timeline & Next Steps](#9-timeline--next-steps)\n10. [References](#10-references)\n\n---\n\n## 1. Introduction\n\n### 1.1 Background\n\nQuantum computing is emerging as a powerful paradigm for solving complex computational problems. However, practical quantum algorithms often require hybrid workflows that combine:\n\n- **Classical preprocessing** (data preparation, feature extraction)\n- **Quantum computation** (quantum algorithms, circuit execution)\n- **Classical postprocessing** (result analysis, optimization)\n\nCurrent tools require developers to manually orchestrate these workflows using multiple frameworks (PyTorch, Qiskit, NumPy), leading to:\n\n- Manual data conversion between frameworks\n- Error-prone boilerplate code\n- No cross-domain optimization\n- Steep learning curve\n\n### 1.2 Motivation\n\nQuarkDSL addresses this problem by providing a **unified language** for hybrid quantum-classical programming with:\n\n- Domain annotations for execution targeting\n- Automatic data marshalling between GPU and quantum domains\n- Cross-domain type checking\n- Multi-backend code generation\n\nThis project demonstrates advanced compiler techniques while solving a real research problem in quantum computing.\n\n---\n\n## 2. Problem Statement\n\n### 2.1 Current Approach\n\nHybrid quantum-classical workflows currently require:\n\n```python\n# Example: Manual hybrid workflow\nimport torch\nfrom qiskit import QuantumCircuit, execute, Aer\n\n# 1. GPU preprocessing\ndata = torch.randn(100).cuda()\nfeatures = neural_network(data)\n\n# 2. Manual conversion - TEDIOUS!\nfeatures_cpu = features.cpu().numpy()\n\n# 3. Quantum encoding - MANUAL!\ncircuit = QuantumCircuit(4)\nfor i, val in enumerate(features_cpu[:4]):\n    circuit.ry(val, i)\ncircuit.cx(0, 1)\n\n# 4. Execution\nbackend = Aer.get_backend('qasm_simulator')",
       "type": "markdown",
       "keywords": [
         "project",
@@ -335,7 +338,7 @@
       "id": "docs/PROJECT_PROPOSAL.md:71-150",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "circuit = QuantumCircuit(4)\nfor i, val in enumerate(features_cpu[:4]):\n    circuit.ry(val, i)\ncircuit.cx(0, 1)\n\n# 4. Execution\nbackend = Aer.get_backend('qasm_simulator')\njob = execute(circuit, backend, shots=1024)\nresult = job.result()\n\n# 5. Manual extraction - TEDIOUS!\ncounts = result.get_counts()\noutput = int(max(counts, key=counts.get), 2)\n```\n\n**Problems:**\n- 50+ lines of boilerplate\n- 3+ frameworks required\n- Manual type conversions\n- Error-prone\n- No optimization across domains\n\n### 2.2 Research Gap\n\nNo existing compiler provides:\n- Unified syntax for GPU + Quantum\n- Automatic data marshalling at compile time\n- Cross-domain optimization\n- Type-safe hybrid workflows\n\n---\n\n## 3. Proposed Solution\n\n### 3.1 QuarkDSL Language\n\nQuarkDSL provides a unified language with domain annotations:\n\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] {\n    // GPU computation\n    let result = [0.0, 0.0, 0.0, 0.0];\n    for i in 0..4 {\n        result[i] = data[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn quantum_encode(features: [float]) -> int {\n    // Quantum computation\n    ry(0, features[0]);\n    ry(1, features[1]);\n    cx(0, 1);\n    return measure(0);\n}\n\nfn main() -> int {\n    let data = [1.0, 2.0, 3.0, 4.0];\n    let features = preprocess(data);      // GPU\n    let result = quantum_encode(features); // Quantum (AUTO-CONVERSION!)\n    return result;\n}\n```\n\n**Benefits:**\n- 10 lines vs 50+ lines\n- Single language\n- Automatic conversions\n- Type-safe\n- Optimizable\n\n### 3.2 Key Features\n\n1. **Domain Annotations:** `@gpu`, `@quantum` for execution targeting\n2. **Automatic Data Marshalling:** Compiler inserts conversions automatically\n3. **Cross-Domain Type Checking:** Validates types across domains\n4. **Multi-Backend Code Generation:** WGSL (GPU), Qiskit (Quantum), Python (Orchestrator)\n5. **Executable Output:** Generates working Python code",
+      "content": "features_cpu = features.cpu().numpy()\n\n# 3. Quantum encoding - MANUAL!\ncircuit = QuantumCircuit(4)\nfor i, val in enumerate(features_cpu[:4]):\n    circuit.ry(val, i)\ncircuit.cx(0, 1)\n\n# 4. Execution\nbackend = Aer.get_backend('qasm_simulator')\njob = execute(circuit, backend, shots=1024)\nresult = job.result()\n\n# 5. Manual extraction - TEDIOUS!\ncounts = result.get_counts()\noutput = int(max(counts, key=counts.get), 2)\n```\n\n**Problems:**\n\n- 50+ lines of boilerplate\n- 3+ frameworks required\n- Manual type conversions\n- Error-prone\n- No optimization across domains\n\n### 2.2 Research Gap\n\nNo existing compiler provides:\n\n- Unified syntax for GPU + Quantum\n- Automatic data marshalling at compile time\n- Cross-domain optimization\n- Type-safe hybrid workflows\n\n---\n\n## 3. Proposed Solution\n\n### 3.1 QuarkDSL Language\n\nQuarkDSL provides a unified language with domain annotations:\n\n```rust\n@gpu\nfn preprocess(data: [float]) -> [float] {\n    // GPU computation\n    let result = [0.0, 0.0, 0.0, 0.0];\n    for i in 0..4 {\n        result[i] = data[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn quantum_encode(features: [float]) -> int {\n    // Quantum computation\n    ry(0, features[0]);\n    ry(1, features[1]);\n    cx(0, 1);\n    return measure(0);\n}\n\nfn main() -> int {\n    let data = [1.0, 2.0, 3.0, 4.0];\n    let features = preprocess(data);      // GPU\n    let result = quantum_encode(features); // Quantum (AUTO-CONVERSION!)\n    return result;\n}\n```\n\n**Benefits:**\n\n- 10 lines vs 50+ lines\n- Single language\n- Automatic conversions\n- Type-safe\n- Optimizable\n\n### 3.2 Key Features",
       "type": "markdown",
       "keywords": [
         "project",
@@ -344,15 +347,12 @@
         "quantum_encode",
         "main",
         "compile",
-        "wgsl",
         "quantum",
         "gpu",
         "type",
-        "check",
         "error",
         "ir",
         "backend",
-        "orchestrator",
         "if",
         "measure",
         "hybrid"
@@ -364,7 +364,7 @@
       "id": "docs/PROJECT_PROPOSAL.md:141-220",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "- Type-safe\n- Optimizable\n\n### 3.2 Key Features\n\n1. **Domain Annotations:** `@gpu`, `@quantum` for execution targeting\n2. **Automatic Data Marshalling:** Compiler inserts conversions automatically\n3. **Cross-Domain Type Checking:** Validates types across domains\n4. **Multi-Backend Code Generation:** WGSL (GPU), Qiskit (Quantum), Python (Orchestrator)\n5. **Executable Output:** Generates working Python code\n\n---\n\n## 4. Language Design\n\n### 4.1 Type System\n\n| Type | Domain | Description |\n|------|--------|-------------|\n| `int` | All | 32-bit integer |\n| `float` | All | 64-bit floating point |\n| `bool` | All | Boolean |\n| `[T]` | All | Array of type T |\n| `tensor<T>` | GPU | GPU tensor |\n| `qstate` | Quantum | Quantum state |\n| `qubit` | Quantum | Single qubit (internal) |\n\n### 4.2 Grammar (EBNF)\n\n```ebnf\nprogram     ::= function*\nfunction    ::= domain? \"fn\" IDENT \"(\" params \")\" \"->\" type block\ndomain      ::= \"@gpu\" | \"@quantum\"\nparams      ::= (param (\",\" param)*)?\nparam       ::= IDENT \":\" type\ntype        ::= \"int\" | \"float\" | \"bool\" | \"void\" | \"[\" type \"]\" \n              | \"tensor\" \"<\" type \">\" | \"qstate\"\nblock       ::= \"{\" statement* \"}\"\nstatement   ::= let_stmt | if_stmt | for_stmt | return_stmt | expr_stmt\nlet_stmt    ::= \"let\" IDENT \"=\" expression \";\"\nif_stmt     ::= \"if\" expression block (\"else\" block)?\nfor_stmt    ::= \"for\" IDENT \"in\" expression \"..\" expression block\nreturn_stmt ::= \"return\" expression \";\"\nexpr_stmt   ::= expression \";\"\nexpression  ::= binary_op | call | array_index | literal | IDENT\nbinary_op   ::= expression (\"+\" | \"-\" | \"*\" | \"/\" | \"==\" | \"<\" | \">\") expression\ncall        ::= IDENT \"(\" args \")\"\narray_index ::= expression \"[\" expression \"]\"\nliteral     ::= INT | FLOAT | BOOL | array_literal\narray_literal ::= \"[\" (expression (\",\" expression)*)? \"]\"\n```\n\n### 4.3 Lexer Tokens\n\n```rust\n// Domain annotations\n@gpu, @quantum\n\n// Keywords\nfn, let, if, else, for, in, return\n\n// Types\nint, float, bool, void, tensor, qstate\n\n// Operators\n+, -, *, /, ==, <, >, =, ;, :, ,, ->, .., [, ], {, }, (, )\n\n// Literals\nINT, FLOAT, BOOL, IDENT\n```\n\n---\n\n## 5. Compiler Architecture\n\n### 5.1 Pipeline Overview\n\n```\nQuarkDSL Source (.tgpu)\n    ↓",
+      "content": "\n**Benefits:**\n\n- 10 lines vs 50+ lines\n- Single language\n- Automatic conversions\n- Type-safe\n- Optimizable\n\n### 3.2 Key Features\n\n1. **Domain Annotations:** `@gpu`, `@quantum` for execution targeting\n2. **Automatic Data Marshalling:** Compiler inserts conversions automatically\n3. **Cross-Domain Type Checking:** Validates types across domains\n4. **Multi-Backend Code Generation:** WGSL (GPU), Qiskit (Quantum), Python (Orchestrator)\n5. **Executable Output:** Generates working Python code\n\n---\n\n## 4. Language Design\n\n### 4.1 Type System\n\n| Type        | Domain  | Description             |\n| ----------- | ------- | ----------------------- |\n| `int`       | All     | 32-bit integer          |\n| `float`     | All     | 64-bit floating point   |\n| `bool`      | All     | Boolean                 |\n| `[T]`       | All     | Array of type T         |\n| `tensor<T>` | GPU     | GPU tensor              |\n| `qstate`    | Quantum | Quantum state           |\n| `qubit`     | Quantum | Single qubit (internal) |\n\n### 4.2 Grammar (EBNF)\n\n```ebnf\nprogram     ::= function*\nfunction    ::= domain? \"fn\" IDENT \"(\" params \")\" \"->\" type block\ndomain      ::= \"@gpu\" | \"@quantum\"\nparams      ::= (param (\",\" param)*)?\nparam       ::= IDENT \":\" type\ntype        ::= \"int\" | \"float\" | \"bool\" | \"void\" | \"[\" type \"]\"\n              | \"tensor\" \"<\" type \">\" | \"qstate\"\nblock       ::= \"{\" statement* \"}\"\nstatement   ::= let_stmt | if_stmt | for_stmt | return_stmt | expr_stmt\nlet_stmt    ::= \"let\" IDENT \"=\" expression \";\"\nif_stmt     ::= \"if\" expression block (\"else\" block)?\nfor_stmt    ::= \"for\" IDENT \"in\" expression \"..\" expression block\nreturn_stmt ::= \"return\" expression \";\"\nexpr_stmt   ::= expression \";\"\nexpression  ::= binary_op | call | array_index | literal | IDENT\nbinary_op   ::= expression (\"+\" | \"-\" | \"*\" | \"/\" | \"==\" | \"<\" | \">\") expression\ncall        ::= IDENT \"(\" args \")\"\narray_index ::= expression \"[\" expression \"]\"\nliteral     ::= INT | FLOAT | BOOL | array_literal\narray_literal ::= \"[\" (expression (\",\" expression)*)? \"]\"\n```\n\n### 4.3 Lexer Tokens\n\n```rust\n// Domain annotations\n@gpu, @quantum\n\n// Keywords\nfn, let, if, else, for, in, return\n\n// Types\nint, float, bool, void, tensor, qstate\n\n// Operators\n+, -, *, /, ==, <, >, =, ;, :, ,, ->, .., [, ], {, }, (, )\n\n// Literals\nINT, FLOAT, BOOL, IDENT\n```\n\n---\n\n## 5. Compiler Architecture",
       "type": "markdown",
       "keywords": [
         "project",
@@ -392,7 +392,7 @@
       "id": "docs/PROJECT_PROPOSAL.md:211-290",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "\n---\n\n## 5. Compiler Architecture\n\n### 5.1 Pipeline Overview\n\n```\nQuarkDSL Source (.tgpu)\n    ↓\nLexer (logos) - Tokenization\n    ↓\nParser (Recursive Descent) - AST Generation\n    ↓\nType Checker - Cross-domain validation\n    ↓\nIR Lowering (SSA) - Automatic conversion insertion\n    ↓\nOptimization (DCE, CSE)\n    ↓\nCode Generation\n    ├── WGSL (GPU)\n    ├── Qiskit (Quantum)\n    └── Python Orchestrator (Hybrid)\n```\n\n### 5.2 Parsing Algorithm\n\n**Algorithm:** Recursive Descent (LL(1))\n\n**Rationale:**\n- Simple to implement and understand\n- Efficient for our grammar (no left recursion)\n- Easy to extend with new features\n- Good error messages\n- Suitable for hand-written parsers\n\n**Complexity:** O(n) where n is the number of tokens\n\n### 5.3 IR Design\n\n**SSA-Based Intermediate Representation:**\n\n```\nfn hybrid_pipeline(input: [float]) -> int {\n  entry:\n    %0 = input                                    // Parameter\n    %1 = [1, 2, 3, 4]                            // Constant\n    %2 = convert_Classical_to_Gpu(%0, AngleEncoding)  // AUTO!\n    %3 = convert_Classical_to_Gpu(%1, AngleEncoding)  // AUTO!\n    %4 = call gpu_matmul(%2, %3)                 // GPU call\n    %5 = %4                                       // Assignment\n    %6 = convert_Classical_to_Quantum(%5, AngleEncoding) // AUTO!\n    %7 = call quantum_encode(%6)                 // Quantum call\n    return %7\n}\n```\n\n**Key Features:**\n- Static Single Assignment (SSA) form\n- Domain markers (@gpu, @quantum)\n- DomainConversion instruction (automatic!)\n- Type information preserved\n\n---\n\n## 6. Implementation Details\n\n### 6.1 Technology Stack\n\n- **Language:** Rust (for compiler implementation)\n- **Lexer:** logos library (regex-based tokenization)\n- **Parser:** Hand-written recursive descent\n- **IR:** Custom SSA-based representation\n- **Backends:** WGSL, Qiskit (Python), Python orchestrator\n\n### 6.2 Data Structures\n\n**AST Node:**\n```rust",
+      "content": "// Operators\n+, -, *, /, ==, <, >, =, ;, :, ,, ->, .., [, ], {, }, (, )\n\n// Literals\nINT, FLOAT, BOOL, IDENT\n```\n\n---\n\n## 5. Compiler Architecture\n\n### 5.1 Pipeline Overview\n\n**Native Compiler (Rust):**\n\n```\nQuarkDSL Source (.tgpu)\n    ↓\nLexer (logos) - Tokenization\n    ↓\nParser (Recursive Descent) - AST Generation\n    ↓\nType Checker - Cross-domain validation\n    ↓\nIR Lowering (SSA) - Automatic conversion insertion\n    ↓\nOptimization (DCE, CSE)\n    ↓\nCode Generation\n    ├── WGSL (GPU)\n    ├── Qiskit (Quantum)\n    └── Python Orchestrator (Hybrid)\n```\n\n**TypeScript VM (Web/Node.js):**\n\n```\nQuarkDSL Source (.tgpu)\n    ↓\nLexer (TypeScript) - Tokenization\n    ↓\nParser (Recursive Descent) - AST Generation\n    ↓\nCompiler - Bytecode Generation\n    ↓\nVM Execution\n    ├── Classical (stack-based)\n    ├── GPU (array simulation)\n    └── Quantum (state vector simulation)\n```\n\n### 5.2 Parsing Algorithm\n\n**Algorithm:** Recursive Descent (LL(1))\n\n**Rationale:**\n\n- Simple to implement and understand\n- Efficient for our grammar (no left recursion)\n- Easy to extend with new features\n- Good error messages\n- Suitable for hand-written parsers\n\n**Complexity:** O(n) where n is the number of tokens\n\n### 5.3 IR Design\n\n**SSA-Based Intermediate Representation:**\n\n```\nfn hybrid_pipeline(input: [float]) -> int {\n  entry:\n    %0 = input                                    // Parameter\n    %1 = [1, 2, 3, 4]                            // Constant\n    %2 = convert_Classical_to_Gpu(%0, AngleEncoding)  // AUTO!\n    %3 = convert_Classical_to_Gpu(%1, AngleEncoding)  // AUTO!\n    %4 = call gpu_matmul(%2, %3)                 // GPU call\n    %5 = %4                                       // Assignment\n    %6 = convert_Classical_to_Quantum(%5, AngleEncoding) // AUTO!\n    %7 = call quantum_encode(%6)                 // Quantum call",
       "type": "markdown",
       "keywords": [
         "project",
@@ -411,7 +411,6 @@
         "error",
         "ir",
         "lower",
-        "backend",
         "orchestrator",
         "hybrid"
       ],
@@ -422,11 +421,12 @@
       "id": "docs/PROJECT_PROPOSAL.md:281-360",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "- **Language:** Rust (for compiler implementation)\n- **Lexer:** logos library (regex-based tokenization)\n- **Parser:** Hand-written recursive descent\n- **IR:** Custom SSA-based representation\n- **Backends:** WGSL, Qiskit (Python), Python orchestrator\n\n### 6.2 Data Structures\n\n**AST Node:**\n```rust\npub struct Function {\n    pub name: String,\n    pub domain: Domain,  // Classical, Gpu, Quantum\n    pub params: Vec<Parameter>,\n    pub return_type: Type,\n    pub body: Block,\n}\n```\n\n**IR Instruction:**\n```rust\npub enum Instruction {\n    Assign { dest: SSAVar, value: Value },\n    BinaryOp { dest: SSAVar, op: BinOp, left: Value, right: Value },\n    Call { dest: Option<SSAVar>, function: String, args: Vec<Value> },\n    DomainConversion {\n        dest: SSAVar,\n        source: Value,\n        from_domain: Domain,\n        to_domain: Domain,\n        encoding: ConversionEncoding,\n    },\n    // ... more instructions\n}\n```\n\n### 6.3 Automatic Conversion Insertion\n\n**Algorithm:**\n1. **First Pass:** Collect all function domains into HashMap\n2. **Second Pass:** Lower AST to IR\n   - For each function call:\n     - Check if target domain differs from current domain\n     - If yes, insert DomainConversion instruction\n     - Skip for built-in quantum functions (h, ry, cx, etc.)\n\n**Complexity:** O(n) where n is the number of AST nodes\n\n---\n\n## 7. Progress Report\n\n### 7.1 Completed Phases\n\n✅ **Phase 1: Design (100%)**\n- Hybrid language design\n- Domain annotations syntax\n- Type system design\n- Data marshalling strategy\n\n✅ **Phase 2: Frontend (100%)**\n- Lexer with domain tokens\n- Recursive descent parser\n- AST with domain markers\n- Error handling\n\n✅ **Phase 3: Type System (100%)**\n- Cross-domain call detection\n- Type compatibility rules\n- Built-in quantum functions\n\n✅ **Phase 4: IR & Optimization (100%)**\n- SSA-based IR\n- Automatic conversion insertion\n- Dead Code Elimination (DCE)\n- Common Subexpression Elimination (CSE)\n\n✅ **Phase 5: Code Generation (100%)**\n- WGSL backend (GPU compute shaders)\n- Qiskit backend (quantum circuits)",
+      "content": "fn hybrid_pipeline(input: [float]) -> int {\n  entry:\n    %0 = input                                    // Parameter\n    %1 = [1, 2, 3, 4]                            // Constant\n    %2 = convert_Classical_to_Gpu(%0, AngleEncoding)  // AUTO!\n    %3 = convert_Classical_to_Gpu(%1, AngleEncoding)  // AUTO!\n    %4 = call gpu_matmul(%2, %3)                 // GPU call\n    %5 = %4                                       // Assignment\n    %6 = convert_Classical_to_Quantum(%5, AngleEncoding) // AUTO!\n    %7 = call quantum_encode(%6)                 // Quantum call\n    return %7\n}\n```\n\n**Key Features:**\n\n- Static Single Assignment (SSA) form\n- Domain markers (@gpu, @quantum)\n- DomainConversion instruction (automatic!)\n- Type information preserved\n\n---\n\n## 6. Implementation Details\n\n### 6.1 Technology Stack\n\n- **Language:** Rust (for compiler implementation)\n- **Lexer:** logos library (regex-based tokenization)\n- **Parser:** Hand-written recursive descent\n- **IR:** Custom SSA-based representation\n- **Backends:** WGSL, Qiskit (Python), Python orchestrator\n\n### 6.2 Data Structures\n\n**AST Node:**\n\n```rust\npub struct Function {\n    pub name: String,\n    pub domain: Domain,  // Classical, Gpu, Quantum\n    pub params: Vec<Parameter>,\n    pub return_type: Type,\n    pub body: Block,\n}\n```\n\n**IR Instruction:**\n\n```rust\npub enum Instruction {\n    Assign { dest: SSAVar, value: Value },\n    BinaryOp { dest: SSAVar, op: BinOp, left: Value, right: Value },\n    Call { dest: Option<SSAVar>, function: String, args: Vec<Value> },\n    DomainConversion {\n        dest: SSAVar,\n        source: Value,\n        from_domain: Domain,\n        to_domain: Domain,\n        encoding: ConversionEncoding,\n    },\n    // ... more instructions\n}\n```\n\n### 6.3 Automatic Conversion Insertion\n\n**Algorithm:**\n\n1. **First Pass:** Collect all function domains into HashMap\n2. **Second Pass:** Lower AST to IR\n   - For each function call:\n     - Check if target domain differs from current domain\n     - If yes, insert DomainConversion instruction\n     - Skip for built-in quantum functions (h, ry, cx, etc.)\n\n**Complexity:** O(n) where n is the number of AST nodes\n\n---\n",
       "type": "markdown",
       "keywords": [
         "project",
         "proposal",
+        "hybrid_pipeline",
         "function",
         "instruction",
         "lexer",
@@ -434,6 +434,34 @@
         "ast",
         "token",
         "compile",
+        "wgsl",
+        "quantum",
+        "gpu",
+        "type",
+        "check",
+        "ir",
+        "lower",
+        "backend",
+        "orchestrator",
+        "if",
+        "hybrid"
+      ],
+      "startLine": 281,
+      "endLine": 360
+    },
+    {
+      "id": "docs/PROJECT_PROPOSAL.md:351-430",
+      "filePath": "docs/PROJECT_PROPOSAL.md",
+      "fileName": "PROJECT_PROPOSAL.md",
+      "content": "2. **Second Pass:** Lower AST to IR\n   - For each function call:\n     - Check if target domain differs from current domain\n     - If yes, insert DomainConversion instruction\n     - Skip for built-in quantum functions (h, ry, cx, etc.)\n\n**Complexity:** O(n) where n is the number of AST nodes\n\n---\n\n## 7. Progress Report\n\n### 7.1 Completed Phases\n\n✅ **Phase 1: Design (100%)**\n\n- Hybrid language design\n- Domain annotations syntax\n- Type system design\n- Data marshalling strategy\n\n✅ **Phase 2: Frontend (100%)**\n\n- Lexer with domain tokens\n- Recursive descent parser\n- AST with domain markers\n- Error handling\n\n✅ **Phase 3: Type System (100%)**\n\n- Cross-domain call detection\n- Type compatibility rules\n- Built-in quantum functions\n\n✅ **Phase 4: IR & Optimization (100%)**\n\n- SSA-based IR\n- Automatic conversion insertion\n- Dead Code Elimination (DCE)\n- Common Subexpression Elimination (CSE)\n\n✅ **Phase 5: Code Generation (100%)**\n\n- WGSL backend (GPU compute shaders)\n- Qiskit backend (quantum circuits)\n- Python orchestrator backend (hybrid execution)\n\n✅ **Phase 6: TypeScript Virtual Machine (100%)**\n\n- Stack-based bytecode interpreter\n- 8-qubit quantum state vector simulator\n- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli\n- Web playground for interactive development\n- Browser and Node.js compatible\n\n### 7.2 Statistics\n\n- **Total Lines of Code:** ~6,500\n- **Rust Code:** ~2,800 lines\n- **TypeScript Code:** ~3,000 lines\n- **Documentation:** ~700 lines\n- **Build Status:** 0 errors, 0 warnings\n- **Test Status:** All tests passing\n\n### 7.3 Test Results\n\n```\nBuild: PASS\nParse: PASS (all examples)\nLower: PASS (IR generation with auto-conversions)\nWGSL Backend: PASS\nQuantum Backend: PASS\nOrchestrator Backend: PASS\nVQE Example: PASS (complex hybrid workflow)\nPython Execution: PASS\nTypeScript VM: PASS\nQuantum Simulator: PASS\nWeb Playground: PASS\n```\n",
+      "type": "markdown",
+      "keywords": [
+        "project",
+        "proposal",
+        "lexer",
+        "parser",
+        "ast",
+        "token",
         "wgsl",
         "quantum",
         "gpu",
@@ -447,25 +475,28 @@
         "frontend",
         "orchestrator",
         "expression",
+        "function",
         "if",
+        "qubit",
+        "gate",
         "hybrid"
       ],
-      "startLine": 281,
-      "endLine": 360
+      "startLine": 351,
+      "endLine": 430
     },
     {
-      "id": "docs/PROJECT_PROPOSAL.md:351-430",
+      "id": "docs/PROJECT_PROPOSAL.md:421-500",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "\n✅ **Phase 4: IR & Optimization (100%)**\n- SSA-based IR\n- Automatic conversion insertion\n- Dead Code Elimination (DCE)\n- Common Subexpression Elimination (CSE)\n\n✅ **Phase 5: Code Generation (100%)**\n- WGSL backend (GPU compute shaders)\n- Qiskit backend (quantum circuits)\n- Python orchestrator backend (hybrid execution)\n\n### 7.2 Statistics\n\n- **Total Lines of Code:** ~3,500\n- **Rust Code:** ~2,800 lines\n- **Documentation:** ~700 lines\n- **Build Status:** ✅ 0 errors, 0 warnings\n- **Test Status:** ✅ All tests passing\n\n### 7.3 Test Results\n\n```\n✅ Build: PASS\n✅ Parse: PASS (all examples)\n✅ Lower: PASS (IR generation with auto-conversions)\n✅ WGSL Backend: PASS\n✅ Quantum Backend: PASS\n✅ Orchestrator Backend: PASS\n✅ VQE Example: PASS (complex hybrid workflow)\n✅ Python Execution: PASS\n```\n\n---\n\n## 8. Challenges & Solutions\n\n### 8.1 Challenge 1: Cross-Domain Type Checking\n\n**Problem:** How to validate types across GPU/Quantum boundaries?\n\n**Solution:** Extended type checker with domain-aware rules:\n- Track function domains in symbol table\n- Validate cross-domain calls\n- Ensure type compatibility for conversions\n\n### 8.2 Challenge 2: Automatic Conversion Insertion\n\n**Problem:** When and where to insert conversions?\n\n**Solution:** Two-pass IR lowering:\n1. First pass: Collect all function domains\n2. Second pass: Insert conversions at domain boundaries\n\n### 8.3 Challenge 3: Multi-Backend Code Generation\n\n**Problem:** Single IR → 3 different output languages\n\n**Solution:** Modular backend architecture:\n- Shared IR representation\n- Backend-specific code generators\n- Common helper functions\n\n### 8.4 Challenge 4: Data Marshalling Strategies\n\n**Problem:** How to convert GPU tensors ↔ Quantum states?\n\n**Solution:** Multiple encoding strategies:\n- **Angle Encoding:** Classical float → Quantum rotation (ry gate)\n- **Amplitude Encoding:** Classical vector → Quantum statevector\n- **Measurement Extraction:** Quantum counts → Classical int\n\n---\n\n## 9. Timeline & Next Steps\n\n### 9.1 Remaining Work (Week 11-12)\n\n- [ ] Standard library for common patterns (VQE, QAOA)\n- [ ] Enhanced error messages with line numbers",
+      "content": "WGSL Backend: PASS\nQuantum Backend: PASS\nOrchestrator Backend: PASS\nVQE Example: PASS (complex hybrid workflow)\nPython Execution: PASS\nTypeScript VM: PASS\nQuantum Simulator: PASS\nWeb Playground: PASS\n```\n\n---\n\n## 8. Challenges & Solutions\n\n### 8.1 Challenge 1: Cross-Domain Type Checking\n\n**Problem:** How to validate types across GPU/Quantum boundaries?\n\n**Solution:** Extended type checker with domain-aware rules:\n\n- Track function domains in symbol table\n- Validate cross-domain calls\n- Ensure type compatibility for conversions\n\n### 8.2 Challenge 2: Automatic Conversion Insertion\n\n**Problem:** When and where to insert conversions?\n\n**Solution:** Two-pass IR lowering:\n\n1. First pass: Collect all function domains\n2. Second pass: Insert conversions at domain boundaries\n\n### 8.3 Challenge 3: Multi-Backend Code Generation\n\n**Problem:** Single IR → 3 different output languages\n\n**Solution:** Modular backend architecture:\n\n- Shared IR representation\n- Backend-specific code generators\n- Common helper functions\n\n### 8.4 Challenge 4: Data Marshalling Strategies\n\n**Problem:** How to convert GPU tensors ↔ Quantum states?\n\n**Solution:** Multiple encoding strategies:\n\n- **Angle Encoding:** Classical float → Quantum rotation (ry gate)\n- **Amplitude Encoding:** Classical vector → Quantum statevector\n- **Measurement Extraction:** Quantum counts → Classical int\n\n---\n\n## 9. Timeline & Next Steps\n\n### 9.1 Completed Work\n\n- [x] Native Rust compiler with 3 backends\n- [x] TypeScript Virtual Machine with quantum simulator\n- [x] Web playground for interactive development\n- [x] 8-qubit quantum state vector simulation\n- [x] Full quantum gate set (H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli)\n\n### 9.2 Future Enhancements\n\n- [ ] Standard library for common patterns (VQE, QAOA)\n- [ ] Enhanced error messages with line numbers\n- [ ] More optimization passes (constant folding, loop unrolling)\n- [ ] Increase qubit limit in VM simulator\n- [ ] WebGPU integration for GPU operations\n\n### 9.3 Final Deliverables\n\n- [x] GitHub repository\n- [x] Web playground\n- [ ] Final presentation slides\n- [ ] Project report (max 20 pages)\n- [ ] Demo video (5 minutes)",
       "type": "markdown",
       "keywords": [
         "project",
         "proposal",
+        "compile",
         "wgsl",
         "quantum",
         "gpu",
-        "shader",
         "type",
         "check",
         "error",
@@ -473,21 +504,22 @@
         "lower",
         "backend",
         "orchestrator",
-        "expression",
         "function",
+        "loop",
         "if",
+        "qubit",
         "gate",
         "measure",
         "hybrid"
       ],
-      "startLine": 351,
-      "endLine": 430
+      "startLine": 421,
+      "endLine": 500
     },
     {
-      "id": "docs/PROJECT_PROPOSAL.md:421-461",
+      "id": "docs/PROJECT_PROPOSAL.md:491-520",
       "filePath": "docs/PROJECT_PROPOSAL.md",
       "fileName": "PROJECT_PROPOSAL.md",
-      "content": "- **Measurement Extraction:** Quantum counts → Classical int\n\n---\n\n## 9. Timeline & Next Steps\n\n### 9.1 Remaining Work (Week 11-12)\n\n- [ ] Standard library for common patterns (VQE, QAOA)\n- [ ] Enhanced error messages with line numbers\n- [ ] More optimization passes (constant folding, loop unrolling)\n- [ ] Documentation improvements\n\n### 9.2 Final Deliverables (Week 13)\n\n- [ ] Final presentation slides\n- [ ] Project report (max 20 pages)\n- [ ] Demo video (5 minutes)\n- [ ] GitHub repository\n- [ ] Live demo\n\n### 9.3 Current Status\n\n**Overall Progress:** 95% Complete  \n**Confidence Level:** HIGH ✅\n\n---\n\n## 10. References\n\n1. Qiskit Documentation: https://qiskit.org/documentation/\n2. WebGPU Specification: https://www.w3.org/TR/webgpu/\n3. SSA Form: Cytron et al., \"Efficiently Computing Static Single Assignment Form\"\n4. Recursive Descent Parsing: Aho, Sethi, Ullman, \"Compilers: Principles, Techniques, and Tools\"\n5. VQE Algorithm: Peruzzo et al., \"A variational eigenvalue solver on a photonic quantum processor\"\n\n---\n\n**End of Proposal**\n\n",
+      "content": "- [ ] Increase qubit limit in VM simulator\n- [ ] WebGPU integration for GPU operations\n\n### 9.3 Final Deliverables\n\n- [x] GitHub repository\n- [x] Web playground\n- [ ] Final presentation slides\n- [ ] Project report (max 20 pages)\n- [ ] Demo video (5 minutes)\n\n### 9.4 Current Status\n\n**Overall Progress:** 100% Complete\n**Confidence Level:** HIGH\n\n---\n\n## 10. References\n\n1. Qiskit Documentation: https://qiskit.org/documentation/\n2. WebGPU Specification: https://www.w3.org/TR/webgpu/\n3. SSA Form: Cytron et al., \"Efficiently Computing Static Single Assignment Form\"\n4. Recursive Descent Parsing: Aho, Sethi, Ullman, \"Compilers: Principles, Techniques, and Tools\"\n5. VQE Algorithm: Peruzzo et al., \"A variational eigenvalue solver on a photonic quantum processor\"\n\n---\n\n**End of Proposal**\n",
       "type": "markdown",
       "keywords": [
         "project",
@@ -495,13 +527,11 @@
         "compile",
         "quantum",
         "gpu",
-        "error",
-        "loop",
         "if",
-        "measure"
+        "qubit"
       ],
-      "startLine": 421,
-      "endLine": 461
+      "startLine": 491,
+      "endLine": 520
     },
     {
       "id": "examples/bell_state.tgpu:1-14",
@@ -747,7 +777,7 @@
       "id": "README.md:1-80",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "# QuarkDSL\n\nHybrid Quantum-Classical Compiler\n\n---\n\n## Overview\n\n| Property         | Value                                                               |\n| ---------------- | ------------------------------------------------------------------- |\n| **Type**         | Source-to-source compiler (transpiler)                              |\n| **Input**        | QuarkDSL (`.tgpu`)                                                  |\n| **Output**       | WGSL (WebGPU Shading Language), Qiskit Python, Python Orchestrator  |\n| **Language**     | Rust                                                                |\n| **Parser**       | RDP (Recursive Descent Parser), LL(1)-style                         |\n| **Lexer**        | DFA (Deterministic Finite Automaton)-based (Logos library)          |\n| **IR**           | SSA (Static Single Assignment)                                      |\n| **Backends**     | 3 (WGSL, Quantum, Orchestrator)                                     |\n| **Optimization** | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) |\n| **Status**       | Complete                                                            |\n\n---\n\n## Grammar (EBNF)\n\n```ebnf\nprogram     ::= function*\nfunction    ::= domain? \"fn\" IDENT \"(\" params \")\" \"->\" type block\ndomain      ::= \"@gpu\" | \"@quantum\"\nparams      ::= (param (\",\" param)*)?\nparam       ::= IDENT \":\" type\ntype        ::= \"int\" | \"float\" | \"bool\" | \"void\" | \"qubit\"\n              | \"[\" type (\"; INT)? \"]\"\n              | \"tensor\" \"<\" type \">\"\n              | \"qstate\"\nblock       ::= \"{\" statement* \"}\"\nstatement   ::= let_stmt | assign_stmt | if_stmt | for_stmt\n              | return_stmt | expr_stmt\nlet_stmt    ::= \"let\" IDENT (\":\" type)? \"=\" expression \";\"\nassign_stmt ::= IDENT (\"[\" expression \"]\")? \"=\" expression \";\"\nif_stmt     ::= \"if\" expression block (\"else\" block)?\nfor_stmt    ::= \"for\" IDENT \"in\" expression \"..\" expression block\nreturn_stmt ::= \"return\" expression? \";\"\nexpr_stmt   ::= expression \";\"\nexpression  ::= or_expr\nor_expr     ::= and_expr (\"||\" and_expr)*\nand_expr    ::= eq_expr (\"&&\" eq_expr)*\neq_expr     ::= cmp_expr ((\"==\" | \"!=\") cmp_expr)*\ncmp_expr    ::= term ((\"<\" | \"<=\" | \">\" | \">=\") term)*\nterm        ::= factor ((\"+\" | \"-\") factor)*\nfactor      ::= unary ((\"*\" | \"/\" | \"%\") unary)*\nunary       ::= (\"-\" | \"!\")? postfix\npostfix     ::= primary (\"[\" expression \"]\" | \"(\" args \")\")*\nprimary     ::= INT | FLOAT | \"true\" | \"false\" | IDENT\n              | \"[\" (expression (\",\" expression)*)? \"]\"\n              | \"(\" expression \")\"\n              | \"map\" \"(\" IDENT \",\" expression \")\"\nargs        ::= (expression (\",\" expression)*)?\n```\n\n---\n\n## Operator Precedence\n\n| Level       | Operators            | Associativity | Description                      |\n| ----------- | -------------------- | ------------- | -------------------------------- |\n| 1 (lowest)  | `\\|\\|`               | Left          | Logical OR                       |\n| 2           | `&&`                 | Left          | Logical AND                      |\n| 3           | `==`, `!=`           | Left          | Equality                         |\n| 4           | `<`, `<=`, `>`, `>=` | Left          | Comparison                       |\n| 5           | `+`, `-`             | Left          | Addition, Subtraction            |\n| 6           | `*`, `/`, `%`        | Left          | Multiplication, Division, Modulo |\n| 7           | `-`, `!`             | Right         | Unary negation, NOT              |\n| 8 (highest) | `[]`, `()`           | Left          | Array index, Function call       |\n\n---\n\n## Tokens\n\n### Keywords (8)",
+      "content": "# QuarkDSL\n\nHybrid Quantum-Classical Compiler with TypeScript Virtual Machine\n\n---\n\n## Overview\n\n| Property         | Value                                                               |\n| ---------------- | ------------------------------------------------------------------- |\n| **Type**         | Source-to-source compiler (transpiler) + Virtual Machine            |\n| **Input**        | QuarkDSL (`.tgpu`)                                                  |\n| **Output**       | WGSL (WebGPU Shading Language), Qiskit Python, Python Orchestrator  |\n| **Language**     | Rust (native compiler), TypeScript (VM)                             |\n| **Parser**       | RDP (Recursive Descent Parser), LL(1)-style                         |\n| **Lexer**        | DFA (Deterministic Finite Automaton)-based                          |\n| **IR**           | SSA (Static Single Assignment) / Stack-based bytecode (VM)          |\n| **Backends**     | 3 (WGSL, Quantum, Orchestrator) + TypeScript VM                     |\n| **Optimization** | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) |\n| **Runtime**      | TypeScript VM with quantum simulator (8 qubits)                     |\n| **Status**       | Complete                                                            |\n\n---\n\n## Grammar (EBNF)\n\n```ebnf\nprogram     ::= function*\nfunction    ::= domain? \"fn\" IDENT \"(\" params \")\" \"->\" type block\ndomain      ::= \"@gpu\" | \"@quantum\"\nparams      ::= (param (\",\" param)*)?\nparam       ::= IDENT \":\" type\ntype        ::= \"int\" | \"float\" | \"bool\" | \"void\" | \"qubit\"\n              | \"[\" type (\"; INT)? \"]\"\n              | \"tensor\" \"<\" type \">\"\n              | \"qstate\"\nblock       ::= \"{\" statement* \"}\"\nstatement   ::= let_stmt | assign_stmt | if_stmt | for_stmt\n              | return_stmt | expr_stmt\nlet_stmt    ::= \"let\" IDENT (\":\" type)? \"=\" expression \";\"\nassign_stmt ::= IDENT (\"[\" expression \"]\")? \"=\" expression \";\"\nif_stmt     ::= \"if\" expression block (\"else\" block)?\nfor_stmt    ::= \"for\" IDENT \"in\" expression \"..\" expression block\nreturn_stmt ::= \"return\" expression? \";\"\nexpr_stmt   ::= expression \";\"\nexpression  ::= or_expr\nor_expr     ::= and_expr (\"||\" and_expr)*\nand_expr    ::= eq_expr (\"&&\" eq_expr)*\neq_expr     ::= cmp_expr ((\"==\" | \"!=\") cmp_expr)*\ncmp_expr    ::= term ((\"<\" | \"<=\" | \">\" | \">=\") term)*\nterm        ::= factor ((\"+\" | \"-\") factor)*\nfactor      ::= unary ((\"*\" | \"/\" | \"%\") unary)*\nunary       ::= (\"-\" | \"!\")? postfix\npostfix     ::= primary (\"[\" expression \"]\" | \"(\" args \")\")*\nprimary     ::= INT | FLOAT | \"true\" | \"false\" | IDENT\n              | \"[\" (expression (\",\" expression)*)? \"]\"\n              | \"(\" expression \")\"\n              | \"map\" \"(\" IDENT \",\" expression \")\"\nargs        ::= (expression (\",\" expression)*)?\n```\n\n---\n\n## Operator Precedence\n\n| Level       | Operators            | Associativity | Description                      |\n| ----------- | -------------------- | ------------- | -------------------------------- |\n| 1 (lowest)  | `\\|\\|`               | Left          | Logical OR                       |\n| 2           | `&&`                 | Left          | Logical AND                      |\n| 3           | `==`, `!=`           | Left          | Equality                         |\n| 4           | `<`, `<=`, `>`, `>=` | Left          | Comparison                       |\n| 5           | `+`, `-`             | Left          | Addition, Subtraction            |\n| 6           | `*`, `/`, `%`        | Left          | Multiplication, Division, Modulo |\n| 7           | `-`, `!`             | Right         | Unary negation, NOT              |\n| 8 (highest) | `[]`, `()`           | Left          | Array index, Function call       |\n\n---\n\n## Tokens\n",
       "type": "markdown",
       "keywords": [
         "readme",
@@ -776,7 +806,7 @@
       "id": "README.md:71-150",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "| 5           | `+`, `-`             | Left          | Addition, Subtraction            |\n| 6           | `*`, `/`, `%`        | Left          | Multiplication, Division, Modulo |\n| 7           | `-`, `!`             | Right         | Unary negation, NOT              |\n| 8 (highest) | `[]`, `()`           | Left          | Array index, Function call       |\n\n---\n\n## Tokens\n\n### Keywords (8)\n\n```\nfn  let  return  if  else  for  in  map\n```\n\n### Annotations (2)\n\n```\n@gpu  @quantum\n```\n\n### Types (7)\n\n```\nint  float  bool  qubit  void  tensor  qstate\n```\n\n### Operators (19)\n\n```\n+  -  *  /  %  ==  !=  <  <=  >  >=  &&  ||  !  =\n```\n\n### Delimiters (11)\n\n```\n(  )  {  }  [  ]  ,  ;  :  ->  ..\n```\n\n### Literals (5)\n\n| Token   | Regex                     | Example     |\n| ------- | ------------------------- | ----------- |\n| `INT`   | `[0-9]+`                  | `123`       |\n| `FLOAT` | `[0-9]+\\.[0-9]+`          | `3.14`      |\n| `BOOL`  | `true \\| false`           | `true`      |\n| `IDENT` | `[a-zA-Z_][a-zA-Z0-9_]*`  | `foo`       |\n| `ARRAY` | `[` expr (`,` expr)\\* `]` | `[1, 2, 3]` |\n\n### Skip Rules\n\n```regex\n[ \\t\\n\\f]+      // Whitespace\n//[^\\n]*        // Single-line comments\n```\n\n---\n\n## Type System\n\n| Type    | Syntax            | Domain  | Example                  |\n| ------- | ----------------- | ------- | ------------------------ |\n| Integer | `int`             | All     | `let x: int = 5;`        |\n| Float   | `float`           | All     | `let y: float = 3.14;`   |\n| Boolean | `bool`            | All     | `let flag: bool = true;` |\n| Qubit   | `qubit`           | Quantum | `let q: qubit;`          |\n| Void    | `void`            | All     | `fn f() -> void`         |\n| Array   | `[T]` or `[T; N]` | All     | `let arr: [int; 10];`    |\n| Tensor  | `tensor<T>`       | GPU     | `let t: tensor<float>;`  |\n| QState  | `qstate`          | Quantum | `let s: qstate;`         |\n\n---\n\n## Compiler Pipeline\n\n```\n.tgpu Source\n    ↓\nLexer (DFA) → Tokens (47 types)\n    ↓",
+      "content": "| 4           | `<`, `<=`, `>`, `>=` | Left          | Comparison                       |\n| 5           | `+`, `-`             | Left          | Addition, Subtraction            |\n| 6           | `*`, `/`, `%`        | Left          | Multiplication, Division, Modulo |\n| 7           | `-`, `!`             | Right         | Unary negation, NOT              |\n| 8 (highest) | `[]`, `()`           | Left          | Array index, Function call       |\n\n---\n\n## Tokens\n\n### Keywords (8)\n\n```\nfn  let  return  if  else  for  in  map\n```\n\n### Annotations (2)\n\n```\n@gpu  @quantum\n```\n\n### Types (7)\n\n```\nint  float  bool  qubit  void  tensor  qstate\n```\n\n### Operators (19)\n\n```\n+  -  *  /  %  ==  !=  <  <=  >  >=  &&  ||  !  =\n```\n\n### Delimiters (11)\n\n```\n(  )  {  }  [  ]  ,  ;  :  ->  ..\n```\n\n### Literals (5)\n\n| Token   | Regex                     | Example     |\n| ------- | ------------------------- | ----------- |\n| `INT`   | `[0-9]+`                  | `123`       |\n| `FLOAT` | `[0-9]+\\.[0-9]+`          | `3.14`      |\n| `BOOL`  | `true \\| false`           | `true`      |\n| `IDENT` | `[a-zA-Z_][a-zA-Z0-9_]*`  | `foo`       |\n| `ARRAY` | `[` expr (`,` expr)\\* `]` | `[1, 2, 3]` |\n\n### Skip Rules\n\n```regex\n[ \\t\\n\\f]+      // Whitespace\n//[^\\n]*        // Single-line comments\n```\n\n---\n\n## Type System\n\n| Type    | Syntax            | Domain  | Example                  |\n| ------- | ----------------- | ------- | ------------------------ |\n| Integer | `int`             | All     | `let x: int = 5;`        |\n| Float   | `float`           | All     | `let y: float = 3.14;`   |\n| Boolean | `bool`            | All     | `let flag: bool = true;` |\n| Qubit   | `qubit`           | Quantum | `let q: qubit;`          |\n| Void    | `void`            | All     | `fn f() -> void`         |\n| Array   | `[T]` or `[T; N]` | All     | `let arr: [int; 10];`    |\n| Tensor  | `tensor<T>`       | GPU     | `let t: tensor<float>;`  |\n| QState  | `qstate`          | Quantum | `let s: qstate;`         |\n\n---\n\n## Compiler Pipeline\n\n```\n.tgpu Source\n    ↓\nLexer (DFA) → Tokens (47 types)",
       "type": "markdown",
       "keywords": [
         "readme",
@@ -799,13 +829,11 @@
       "id": "README.md:141-220",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "\n---\n\n## Compiler Pipeline\n\n```\n.tgpu Source\n    ↓\nLexer (DFA) → Tokens (47 types)\n    ↓\nParser (RDP) → AST (Abstract Syntax Tree)\n    ↓\nType Checker → Validated AST\n    ↓\nIR (Intermediate Representation) Lowering → SSA IR (auto-conversion insertion)\n    ↓\nOptimization → DCE (Dead Code Elimination), CSE (Common Subexpression Elimination)\n    ↓\nCode Generation\n    ├── WGSL (WebGPU Shading Language) Backend (GPU shaders)\n    ├── Quantum Backend (Qiskit circuits)\n    └── Orchestrator Backend (Hybrid Python)\n```\n\n---\n\n## Architecture\n\n### Frontend\n\n| Component    | File           | Technology                                   | Output                     |\n| ------------ | -------------- | -------------------------------------------- | -------------------------- |\n| Lexer        | `lexer.rs`     | Logos (DFA - Deterministic Finite Automaton) | Tokens                     |\n| Parser       | `parser.rs`    | RDP (Recursive Descent Parser)               | AST (Abstract Syntax Tree) |\n| Type Checker | `typecheck.rs` | Visitor pattern                              | Validated AST              |\n\n### Middle-end\n\n| Component    | File          | Algorithm                                                           | Output                            |\n| ------------ | ------------- | ------------------------------------------------------------------- | --------------------------------- |\n| IR Lowering  | `lower.rs`    | Two-pass (domain analysis + lowering)                               | SSA (Static Single Assignment) IR |\n| Optimization | `optimize.rs` | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) | Optimized IR                      |\n| IR Dump      | `dump.rs`     | Pretty-printer                                                      | Human-readable IR                 |\n\n### Backend\n\n| Component    | File              | Target | Output                                    |\n| ------------ | ----------------- | ------ | ----------------------------------------- |\n| WGSL         | `wgsl.rs`         | WebGPU | `.wgsl` (WebGPU Shading Language) shaders |\n| Quantum      | `quantum.rs`      | Qiskit | `.py` circuits                            |\n| Orchestrator | `orchestrator.rs` | Python | `.py` hybrid script                       |\n\n---\n\n## Parser Design (RDP - Recursive Descent Parser)\n\n### Why Recursive Descent Parser (RDP)\n\n**Definition:** Each grammar rule implemented as a function that calls other functions recursively.\n\n### Implementation Evidence\n\n```rust\n// src/frontend/parser.rs\nfn parse_expression(&mut self) -> Result<Expression> {\n    self.parse_or()  // Calls parse_or\n}\n\nfn parse_or(&mut self) -> Result<Expression> {\n    let mut left = self.parse_and()?;  // Calls parse_and\n    while matches!(self.current(), Some(Token::OrOr)) {\n        self.advance();\n        let right = self.parse_and()?;\n        left = Expression::Binary { op: BinaryOp::Or, left, right };\n    }\n    Ok(left)\n}\n\nfn parse_and(&mut self) -> Result<Expression> {\n    let mut left = self.parse_equality()?;  // Calls parse_equality",
+      "content": "| QState  | `qstate`          | Quantum | `let s: qstate;`         |\n\n---\n\n## Compiler Pipeline\n\n```\n.tgpu Source\n    ↓\nLexer (DFA) → Tokens (47 types)\n    ↓\nParser (RDP) → AST (Abstract Syntax Tree)\n    ↓\nType Checker → Validated AST\n    ↓\nIR (Intermediate Representation) Lowering → SSA IR (auto-conversion insertion)\n    ↓\nOptimization → DCE (Dead Code Elimination), CSE (Common Subexpression Elimination)\n    ↓\nCode Generation / Execution\n    ├── WGSL (WebGPU Shading Language) Backend (GPU shaders)\n    ├── Quantum Backend (Qiskit circuits)\n    ├── Orchestrator Backend (Hybrid Python)\n    └── TypeScript VM (Direct execution with quantum simulation)\n```\n\n---\n\n## Architecture\n\n### Frontend\n\n| Component    | File           | Technology                                   | Output                     |\n| ------------ | -------------- | -------------------------------------------- | -------------------------- |\n| Lexer        | `lexer.rs`     | Logos (DFA - Deterministic Finite Automaton) | Tokens                     |\n| Parser       | `parser.rs`    | RDP (Recursive Descent Parser)               | AST (Abstract Syntax Tree) |\n| Type Checker | `typecheck.rs` | Visitor pattern                              | Validated AST              |\n\n### Middle-end\n\n| Component    | File          | Algorithm                                                           | Output                            |\n| ------------ | ------------- | ------------------------------------------------------------------- | --------------------------------- |\n| IR Lowering  | `lower.rs`    | Two-pass (domain analysis + lowering)                               | SSA (Static Single Assignment) IR |\n| Optimization | `optimize.rs` | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) | Optimized IR                      |\n| IR Dump      | `dump.rs`     | Pretty-printer                                                      | Human-readable IR                 |\n\n### Backend\n\n| Component    | File              | Target | Output                                    |\n| ------------ | ----------------- | ------ | ----------------------------------------- |\n| WGSL         | `wgsl.rs`         | WebGPU | `.wgsl` (WebGPU Shading Language) shaders |\n| Quantum      | `quantum.rs`      | Qiskit | `.py` circuits                            |\n| Orchestrator | `orchestrator.rs` | Python | `.py` hybrid script                       |\n\n### Runtime (TypeScript VM)\n\n| Component         | File                   | Description                              |\n| ----------------- | ---------------------- | ---------------------------------------- |\n| Lexer             | `lexer.ts`             | DFA-based tokenizer                      |\n| Parser            | `parser.ts`            | Recursive descent parser                 |\n| Compiler          | `compiler.ts`          | AST to bytecode compiler                 |\n| Virtual Machine   | `vm.ts`                | Stack-based bytecode interpreter         |\n| Quantum Simulator | `quantum-simulator.ts` | 8-qubit quantum state simulator          |\n| Quantum Gates     | `quantum-gates.ts`     | H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, etc. |\n\n---\n\n## Parser Design (RDP - Recursive Descent Parser)\n\n### Why Recursive Descent Parser (RDP)\n\n**Definition:** Each grammar rule implemented as a function that calls other functions recursively.\n\n### Implementation Evidence\n\n```rust\n// src/frontend/parser.rs\nfn parse_expression(&mut self) -> Result<Expression> {\n    self.parse_or()  // Calls parse_or\n}",
       "type": "markdown",
       "keywords": [
         "readme",
         "parse_expression",
-        "parse_or",
-        "parse_and",
         "lexer",
         "parser",
         "ast",
@@ -826,6 +854,8 @@
         "orchestrator",
         "expression",
         "function",
+        "qubit",
+        "gate",
         "hybrid"
       ],
       "startLine": 141,
@@ -835,21 +865,21 @@
       "id": "README.md:211-290",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "    while matches!(self.current(), Some(Token::OrOr)) {\n        self.advance();\n        let right = self.parse_and()?;\n        left = Expression::Binary { op: BinaryOp::Or, left, right };\n    }\n    Ok(left)\n}\n\nfn parse_and(&mut self) -> Result<Expression> {\n    let mut left = self.parse_equality()?;  // Calls parse_equality\n    // ...\n}\n```\n\n### Recursive Call Chain\n\n```\nparse_program()\n  → parse_function()\n    → parse_params()\n    → parse_type()\n    → parse_statements()\n      → parse_statement()\n        → parse_expression()\n          → parse_or()\n            → parse_and()\n              → parse_equality()\n                → parse_comparison()\n                  → parse_term()\n                    → parse_factor()\n                      → parse_unary()\n                        → parse_postfix()\n                          → parse_primary()\n```\n\n### RDP (Recursive Descent Parser) Characteristics\n\n| Feature                       | QuarkDSL Implementation                                       |\n| ----------------------------- | ------------------------------------------------------------- |\n| One function per grammar rule | `parse_function()`, `parse_statement()`, `parse_expression()` |\n| Recursive calls               | Functions call each other recursively                         |\n| Hand-written                  | No parser generator used                                      |\n| Top-down parsing              | Starts from `parse_program()`                                 |\n| Predictive (1 lookahead)      | Uses `self.current()` to decide production                    |\n| LL(1)-style                   | LL(1) - Left-to-right, Leftmost derivation, 1 lookahead       |\n\n### Not RDP (Recursive Descent Parser)\n\n| Type                                                 | Characteristics    | QuarkDSL |\n| ---------------------------------------------------- | ------------------ | -------- |\n| Table-driven LL(1)                                   | Uses parse table   | No       |\n| Bottom-up (LR - Left-to-right, Rightmost derivation) | Shift-reduce       | No       |\n| Generated                                            | Yacc, Bison, ANTLR | No       |\n\n---\n\n## IR (Intermediate Representation) Design\n\n### SSA (Static Single Assignment) Instructions\n\n```rust\nAssign(var, value)              // x = value\nBinOp(result, op, left, right)  // result = left op right\nUnOp(result, op, operand)       // result = op operand\nCall(result, func, args)        // result = func(args)\nArrayIndex(result, array, idx)  // result = array[idx]\nArraySet(array, idx, value)     // array[idx] = value\nReturn(value)                   // return value\nBranch(cond, then, else)        // if cond { then } else { else }\nLoop(var, start, end, body)     // for var in start..end { body }\nDomainConversion(result, value, from, to)  // result = convert(value)\n```\n\n### Domain Annotations\n\n```rust\nDomain::Classical  // CPU (default)\nDomain::Gpu        // @gpu\nDomain::Quantum    // @quantum\n```",
+      "content": "\n**Definition:** Each grammar rule implemented as a function that calls other functions recursively.\n\n### Implementation Evidence\n\n```rust\n// src/frontend/parser.rs\nfn parse_expression(&mut self) -> Result<Expression> {\n    self.parse_or()  // Calls parse_or\n}\n\nfn parse_or(&mut self) -> Result<Expression> {\n    let mut left = self.parse_and()?;  // Calls parse_and\n    while matches!(self.current(), Some(Token::OrOr)) {\n        self.advance();\n        let right = self.parse_and()?;\n        left = Expression::Binary { op: BinaryOp::Or, left, right };\n    }\n    Ok(left)\n}\n\nfn parse_and(&mut self) -> Result<Expression> {\n    let mut left = self.parse_equality()?;  // Calls parse_equality\n    // ...\n}\n```\n\n### Recursive Call Chain\n\n```\nparse_program()\n  → parse_function()\n    → parse_params()\n    → parse_type()\n    → parse_statements()\n      → parse_statement()\n        → parse_expression()\n          → parse_or()\n            → parse_and()\n              → parse_equality()\n                → parse_comparison()\n                  → parse_term()\n                    → parse_factor()\n                      → parse_unary()\n                        → parse_postfix()\n                          → parse_primary()\n```\n\n### RDP (Recursive Descent Parser) Characteristics\n\n| Feature                       | QuarkDSL Implementation                                       |\n| ----------------------------- | ------------------------------------------------------------- |\n| One function per grammar rule | `parse_function()`, `parse_statement()`, `parse_expression()` |\n| Recursive calls               | Functions call each other recursively                         |\n| Hand-written                  | No parser generator used                                      |\n| Top-down parsing              | Starts from `parse_program()`                                 |\n| Predictive (1 lookahead)      | Uses `self.current()` to decide production                    |\n| LL(1)-style                   | LL(1) - Left-to-right, Leftmost derivation, 1 lookahead       |\n\n### Not RDP (Recursive Descent Parser)\n\n| Type                                                 | Characteristics    | QuarkDSL |\n| ---------------------------------------------------- | ------------------ | -------- |\n| Table-driven LL(1)                                   | Uses parse table   | No       |\n| Bottom-up (LR - Left-to-right, Rightmost derivation) | Shift-reduce       | No       |\n| Generated                                            | Yacc, Bison, ANTLR | No       |\n\n---\n\n## IR (Intermediate Representation) Design\n\n### SSA (Static Single Assignment) Instructions\n\n```rust\nAssign(var, value)              // x = value\nBinOp(result, op, left, right)  // result = left op right\nUnOp(result, op, operand)       // result = op operand\nCall(result, func, args)        // result = func(args)\nArrayIndex(result, array, idx)  // result = array[idx]\nArraySet(array, idx, value)     // array[idx] = value",
       "type": "markdown",
       "keywords": [
         "readme",
+        "parse_expression",
+        "parse_or",
         "parse_and",
         "parser",
         "token",
-        "quantum",
-        "gpu",
         "type",
         "ir",
+        "frontend",
         "expression",
         "statement",
         "function",
-        "loop",
         "if"
       ],
       "startLine": 211,
@@ -859,7 +889,7 @@
       "id": "README.md:281-360",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "DomainConversion(result, value, from, to)  // result = convert(value)\n```\n\n### Domain Annotations\n\n```rust\nDomain::Classical  // CPU (default)\nDomain::Gpu        // @gpu\nDomain::Quantum    // @quantum\n```\n\n---\n\n## CLI (Command Line Interface)\n\n### Build\n\n```bash\ncargo build\n```\n\n### Parse Only\n\n```bash\ncargo run -- parse examples/hybrid.tgpu\n```\n\n### Lower to IR (Intermediate Representation)\n\n```bash\ncargo run -- lower examples/hybrid.tgpu\n```\n\n### Compile\n\n#### WGSL (WebGPU Shading Language)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t wgsl -o output.wgsl\n```\n\n#### Quantum (Qiskit)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t quantum -o output.py\n```\n\n#### Orchestrator (Hybrid Python)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py\n```\n\n### With Optimization\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --optimize\n```\n\n### With IR (Intermediate Representation) Dump\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --dump-ir\n```\n\n### With Both Flags\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --optimize --dump-ir\n```\n\n### Execute Generated Code\n\n```bash\npython demo.py\n```\n\n### Test\n\n```bash",
+      "content": "\n### SSA (Static Single Assignment) Instructions\n\n```rust\nAssign(var, value)              // x = value\nBinOp(result, op, left, right)  // result = left op right\nUnOp(result, op, operand)       // result = op operand\nCall(result, func, args)        // result = func(args)\nArrayIndex(result, array, idx)  // result = array[idx]\nArraySet(array, idx, value)     // array[idx] = value\nReturn(value)                   // return value\nBranch(cond, then, else)        // if cond { then } else { else }\nLoop(var, start, end, body)     // for var in start..end { body }\nDomainConversion(result, value, from, to)  // result = convert(value)\n```\n\n### Domain Annotations\n\n```rust\nDomain::Classical  // CPU (default)\nDomain::Gpu        // @gpu\nDomain::Quantum    // @quantum\n```\n\n---\n\n## CLI (Command Line Interface)\n\n### Build\n\n```bash\ncargo build\n```\n\n### Parse Only\n\n```bash\ncargo run -- parse examples/hybrid.tgpu\n```\n\n### Lower to IR (Intermediate Representation)\n\n```bash\ncargo run -- lower examples/hybrid.tgpu\n```\n\n### Compile\n\n#### WGSL (WebGPU Shading Language)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t wgsl -o output.wgsl\n```\n\n#### Quantum (Qiskit)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t quantum -o output.py\n```\n\n#### Orchestrator (Hybrid Python)\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py\n```\n\n### With Optimization\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --optimize\n```\n\n### With IR (Intermediate Representation) Dump\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --dump-ir\n```\n\n### With Both Flags\n",
       "type": "markdown",
       "keywords": [
         "readme",
@@ -871,6 +901,8 @@
         "ir",
         "lower",
         "orchestrator",
+        "loop",
+        "if",
         "hybrid"
       ],
       "startLine": 281,
@@ -880,7 +912,37 @@
       "id": "README.md:351-430",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "\n### Execute Generated Code\n\n```bash\npython demo.py\n```\n\n### Test\n\n```bash\ncargo test\n```\n\n### Clean\n\n```bash\ncargo clean\n```\n\n---\n\n## Example\n\n### Input (`hybrid.tgpu`)\n\n```rust\n@gpu\nfn preprocess(x: [float]) -> [float] {\n    let result = [0.0, 0.0];\n    for i in 0..2 {\n        result[i] = x[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn encode(data: [float]) -> int {\n    ry(0, data[0]);\n    ry(1, data[1]);\n    return 0;\n}\n\nfn main(input: [float]) -> int {\n    let features = preprocess(input);  // GPU\n    encode(features);                  // Auto-convert: GPU → Quantum\n    return 0;\n}\n```\n\n### Output (Orchestrator)\n\n```python\nimport numpy as np\nfrom qiskit import QuantumCircuit\nfrom qiskit_aer import AerSimulator\n\n# GPU function (NumPy simulation)\ndef preprocess(x):\n    result = np.zeros(2)\n    for i in range(2):\n        result[i] = x[i] * 2.0\n    return result\n\n# Quantum function (Qiskit)\ndef encode(data):\n    qc = QuantumCircuit(2)\n    qc.ry(data[0], 0)\n    qc.ry(data[1], 1)\n    return 0\n\n# Orchestrator\ndef main(input):\n    features = preprocess(input)\n    # Auto-conversion: GPU tensor → Quantum state\n    encode(features)\n    return 0\n```\n\n---\n",
+      "content": "```\n\n### With IR (Intermediate Representation) Dump\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --dump-ir\n```\n\n### With Both Flags\n\n```bash\ncargo run -- compile examples/hybrid.tgpu -t orchestrator -o demo.py --optimize --dump-ir\n```\n\n### Execute Generated Code\n\n```bash\npython demo.py\n```\n\n### Test\n\n```bash\ncargo test\n```\n\n### Clean\n\n```bash\ncargo clean\n```\n\n---\n\n## TypeScript Virtual Machine\n\nQuarkDSL includes a TypeScript-based virtual machine for direct execution in web browsers and Node.js environments.\n\n### Features\n\n- Stack-based bytecode interpreter\n- 8-qubit quantum simulator with full state vector simulation\n- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli\n- Measurement with probabilistic collapse\n- GPU function simulation via JavaScript arrays\n\n### Web Playground\n\nThe TypeScript VM powers the interactive web playground at `quarkdsl-web/`. Users can write QuarkDSL code and execute it directly in the browser with real-time quantum simulation.\n\n### VM Architecture\n\n```\nQuarkDSL Source\n    ↓\nLexer (TypeScript) → Tokens\n    ↓\nParser (TypeScript) → AST\n    ↓\nCompiler → Bytecode\n    ↓\nVM Execution\n    ├── Classical operations (stack-based)\n    ├── GPU operations (array simulation)\n    └── Quantum operations (state vector simulation)\n```\n\n### Bytecode Instructions\n\n| Opcode          | Description              |\n| --------------- | ------------------------ |\n| PUSH            | Push constant onto stack |\n| POP             | Pop value from stack     |\n| ADD/SUB/MUL/DIV | Arithmetic operations    |\n| LOAD/STORE      | Variable access          |\n| CALL            | Function call            |\n| RETURN          | Return from function     |\n| JUMP/JUMPIF     | Control flow             |\n| QUANTUM_H       | Apply Hadamard gate      |\n| QUANTUM_X/Y/Z   | Apply Pauli gates        |",
+      "type": "markdown",
+      "keywords": [
+        "readme",
+        "lexer",
+        "parser",
+        "ast",
+        "token",
+        "compile",
+        "quantum",
+        "gpu",
+        "type",
+        "optimize",
+        "ir",
+        "orchestrator",
+        "function",
+        "variable",
+        "if",
+        "qubit",
+        "gate",
+        "measure",
+        "hybrid"
+      ],
+      "startLine": 351,
+      "endLine": 430
+    },
+    {
+      "id": "README.md:421-500",
+      "filePath": "README.md",
+      "fileName": "README.md",
+      "content": "| --------------- | ------------------------ |\n| PUSH            | Push constant onto stack |\n| POP             | Pop value from stack     |\n| ADD/SUB/MUL/DIV | Arithmetic operations    |\n| LOAD/STORE      | Variable access          |\n| CALL            | Function call            |\n| RETURN          | Return from function     |\n| JUMP/JUMPIF     | Control flow             |\n| QUANTUM_H       | Apply Hadamard gate      |\n| QUANTUM_X/Y/Z   | Apply Pauli gates        |\n| QUANTUM_RY      | Apply RY rotation        |\n| QUANTUM_CNOT    | Apply CNOT gate          |\n| QUANTUM_MEASURE | Measure qubit            |\n\n---\n\n## Example\n\n### Input (`hybrid.tgpu`)\n\n```rust\n@gpu\nfn preprocess(x: [float]) -> [float] {\n    let result = [0.0, 0.0];\n    for i in 0..2 {\n        result[i] = x[i] * 2.0;\n    }\n    return result;\n}\n\n@quantum\nfn encode(data: [float]) -> int {\n    ry(0, data[0]);\n    ry(1, data[1]);\n    return 0;\n}\n\nfn main(input: [float]) -> int {\n    let features = preprocess(input);  // GPU\n    encode(features);                  // Auto-convert: GPU → Quantum\n    return 0;\n}\n```\n\n### Output (Orchestrator)\n\n```python\nimport numpy as np\nfrom qiskit import QuantumCircuit\nfrom qiskit_aer import AerSimulator\n\n# GPU function (NumPy simulation)\ndef preprocess(x):\n    result = np.zeros(2)\n    for i in range(2):\n        result[i] = x[i] * 2.0\n    return result\n\n# Quantum function (Qiskit)\ndef encode(data):\n    qc = QuantumCircuit(2)\n    qc.ry(data[0], 0)\n    qc.ry(data[1], 1)\n    return 0\n\n# Orchestrator\ndef main(input):\n    features = preprocess(input)\n    # Auto-conversion: GPU tensor → Quantum state\n    encode(features)\n    return 0\n```\n\n---\n\n## Statistics\n\n| Metric                                        | Value  |\n| --------------------------------------------- | ------ |\n| Total LOC (Lines of Code)                     | ~6,500 |",
       "type": "markdown",
       "keywords": [
         "readme",
@@ -892,16 +954,21 @@
         "ir",
         "orchestrator",
         "function",
+        "variable",
+        "if",
+        "qubit",
+        "gate",
+        "measure",
         "hybrid"
       ],
-      "startLine": 351,
-      "endLine": 430
+      "startLine": 421,
+      "endLine": 500
     },
     {
-      "id": "README.md:421-500",
+      "id": "README.md:491-570",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "# Orchestrator\ndef main(input):\n    features = preprocess(input)\n    # Auto-conversion: GPU tensor → Quantum state\n    encode(features)\n    return 0\n```\n\n---\n\n## Statistics\n\n| Metric                                        | Value  |\n| --------------------------------------------- | ------ |\n| Total LOC (Lines of Code)                     | ~3,500 |\n| Rust files                                    | 13     |\n| Token types                                   | 47     |\n| AST (Abstract Syntax Tree) node types         | 8      |\n| IR (Intermediate Representation) instructions | 10     |\n| Optimization passes                           | 2      |\n| Backends                                      | 3      |\n| Example programs                              | 7      |\n| Build errors                                  | 0      |\n| Build warnings                                | 0      |\n\n---\n\n## Features\n\n### Automatic Data Marshalling\n\n- GPU (Graphics Processing Unit) tensor → Quantum state (angle encoding)\n- Quantum state → GPU tensor (measurement)\n- Inserted at compile time (IR - Intermediate Representation lowering)\n\n### Cross-Domain Optimization\n\n- DCE (Dead Code Elimination)\n- CSE (Common Subexpression Elimination)\n- Domain-aware optimization\n\n### Multi-Backend\n\n- WGSL (WebGPU Shading Language): GPU compute shaders\n- Qiskit: Quantum circuits\n- Orchestrator: Hybrid execution\n\n### IBM Quantum Hardware Support\n\n- Conditional execution: Simulator or real quantum computer\n- Single flag toggle: `USE_QUANTUM_COMPUTER = True/False`\n- Automatic backend selection: Least busy IBM Quantum system\n- Embedded API key: Ready to use\n- Supports 127+ qubit systems: ibm_brisbane, ibm_kyoto, ibm_osaka\n\n---\n\n## Execution\n\n### Compilation\n\n```bash\ncargo run -- compile hybrid.tgpu -t orchestrator -o demo.py\n```\n\n### Execution (Simulation - Default)\n\n```bash\npython demo.py\n# Uses: Qiskit Aer (quantum simulator), NumPy (GPU simulation)\n```\n\n### Execution (IBM Quantum Hardware)\n\n**Step 1:** Edit generated code and set:\n\n```python\nUSE_QUANTUM_COMPUTER = True  # Change from False to True\n```\n",
+      "content": "    return 0\n```\n\n---\n\n## Statistics\n\n| Metric                                        | Value  |\n| --------------------------------------------- | ------ |\n| Total LOC (Lines of Code)                     | ~6,500 |\n| Rust files (native compiler)                  | 13     |\n| TypeScript files (VM)                         | 12     |\n| Token types                                   | 47     |\n| AST (Abstract Syntax Tree) node types         | 8      |\n| IR (Intermediate Representation) instructions | 10     |\n| VM bytecode opcodes                           | 25+    |\n| Optimization passes                           | 2      |\n| Backends                                      | 4      |\n| Quantum gates supported (VM)                  | 10     |\n| Max qubits (VM simulator)                     | 8      |\n| Example programs                              | 7      |\n| Build errors                                  | 0      |\n| Build warnings                                | 0      |\n\n---\n\n## Features\n\n### Automatic Data Marshalling\n\n- GPU (Graphics Processing Unit) tensor → Quantum state (angle encoding)\n- Quantum state → GPU tensor (measurement)\n- Inserted at compile time (IR - Intermediate Representation lowering)\n\n### Cross-Domain Optimization\n\n- DCE (Dead Code Elimination)\n- CSE (Common Subexpression Elimination)\n- Domain-aware optimization\n\n### Multi-Backend\n\n- WGSL (WebGPU Shading Language): GPU compute shaders\n- Qiskit: Quantum circuits\n- Orchestrator: Hybrid execution\n- TypeScript VM: Browser-based execution with quantum simulation\n\n### TypeScript Virtual Machine\n\n- Stack-based bytecode interpreter\n- Full quantum state vector simulation (8 qubits, 256 amplitudes)\n- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli\n- Probabilistic measurement with state collapse\n- Web playground for interactive development\n\n### IBM Quantum Hardware Support\n\n- Conditional execution: Simulator or real quantum computer\n- Single flag toggle: `USE_QUANTUM_COMPUTER = True/False`\n- Automatic backend selection: Least busy IBM Quantum system\n- Embedded API key: Ready to use\n- Supports 127+ qubit systems: ibm_brisbane, ibm_kyoto, ibm_osaka\n\n---\n\n## Execution\n\n### Compilation\n\n```bash\ncargo run -- compile hybrid.tgpu -t orchestrator -o demo.py\n```\n\n### Execution (Simulation - Default)\n\n```bash\npython demo.py\n# Uses: Qiskit Aer (quantum simulator), NumPy (GPU simulation)\n```\n",
       "type": "markdown",
       "keywords": [
         "readme",
@@ -920,25 +987,30 @@
         "orchestrator",
         "expression",
         "qubit",
+        "gate",
         "measure",
         "hybrid"
       ],
-      "startLine": 421,
-      "endLine": 500
+      "startLine": 491,
+      "endLine": 570
     },
     {
-      "id": "README.md:491-516",
+      "id": "README.md:561-594",
       "filePath": "README.md",
       "fileName": "README.md",
-      "content": "```\n\n### Execution (IBM Quantum Hardware)\n\n**Step 1:** Edit generated code and set:\n\n```python\nUSE_QUANTUM_COMPUTER = True  # Change from False to True\n```\n\n**Step 2:** Run:\n\n```bash\npython demo.py\n# Uses: Real IBM Quantum hardware (ibm_brisbane, ibm_kyoto, etc.)\n# API Key: krPjNWz0BsR_PSI0UVVG_VxIFSA27a5SaEgpLlI22-F-\n```\n\n**Documentation:** See `docs/IBM_QUANTUM_INTEGRATION.md` for details.\n\n---\n\n## License\n\nMIT\n",
+      "content": "cargo run -- compile hybrid.tgpu -t orchestrator -o demo.py\n```\n\n### Execution (Simulation - Default)\n\n```bash\npython demo.py\n# Uses: Qiskit Aer (quantum simulator), NumPy (GPU simulation)\n```\n\n### Execution (IBM Quantum Hardware)\n\n**Step 1:** Edit generated code and set:\n\n```python\nUSE_QUANTUM_COMPUTER = True  # Change from False to True\n```\n\n**Step 2:** Run:\n\n```bash\npython demo.py\n# Uses: Real IBM Quantum hardware (ibm_brisbane, ibm_kyoto, etc.)\n# API Key: krPjNWz0BsR_PSI0UVVG_VxIFSA27a5SaEgpLlI22-F-\n```\n\n**Documentation:** See `docs/IBM_QUANTUM_INTEGRATION.md` for details.\n\n---\n\n## License\n\nMIT\n",
       "type": "markdown",
       "keywords": [
         "readme",
+        "compile",
         "quantum",
-        "if"
+        "gpu",
+        "orchestrator",
+        "if",
+        "hybrid"
       ],
-      "startLine": 491,
-      "endLine": 516
+      "startLine": 561,
+      "endLine": 594
     },
     {
       "id": "src/backend/mod.rs:1-4",
@@ -2543,10 +2615,62 @@
       "id": "THEORY.md:561-640",
       "filePath": "THEORY.md",
       "fileName": "THEORY.md",
-      "content": "\n```\nwhile (pc < bytecode.length) {\n    instruction = fetch(bytecode[pc]);\n    decode(instruction);\n    execute(instruction);\n    pc++;\n}\n```\n\n### Implementation\n\n**Status:** To be implemented\n\n**Planned Architecture:**\n\n- Stack-based VM for simplicity\n- Direct interpretation of SSA IR\n- No separate bytecode encoding (IR is the bytecode)\n- Support for quantum and GPU simulation\n\n**VM Components:**\n\n- Operand Stack: For expression evaluation\n- Local Variables: For SSA variables\n- Quantum State: For quantum register simulation\n- GPU Memory: For array/tensor simulation\n- Call Stack: For function calls\n\n**Execution Model:**\n\n```\nIR Instructions → VM Interpreter → Results\n```\n\nThe VM will provide an alternative execution path alongside code generation backends.\n\n---\n\n## Compiler Pipeline Summary\n\n```\nSource Code (.tgpu)\n    ↓\n[1. Lexical Analysis]\n    Regex → DFA → Tokens\n    ↓\n[2. Syntax Analysis]\n    Tokens → RDP → AST\n    ↓\n[3. Semantic Analysis]\n    Type Checking → Validated AST\n    ↓\n[4. IR Generation]\n    AST → Lowering → SSA IR\n    ↓\n[5. Optimization]\n    DCE, CSE → Optimized IR\n    ↓\n[6. Code Generation]\n    ├─→ WGSL Backend → .wgsl (GPU)\n    ├─→ Quantum Backend → .py (Qiskit)\n    └─→ Orchestrator Backend → .py (Hybrid)\n    ↓\n[7. Runtime (Optional)]\n    VM Interpreter → Direct Execution\n```\n\n---\n\n## Theoretical Foundations\n\n### Chomsky Hierarchy\n\nQuarkDSL uses different grammar types at different stages:\n\n| Level  | Grammar Type      | Used In           | Example                          |\n| ------ | ----------------- | ----------------- | -------------------------------- |\n| Type 3 | Regular           | Lexical Analysis  | `[a-zA-Z_][a-zA-Z0-9_]*`         |\n| Type 2 | Context-Free      | Syntax Analysis   | `Expression → Term + Expression` |",
+      "content": "\n```\nwhile (pc < bytecode.length) {\n    instruction = fetch(bytecode[pc]);\n    decode(instruction);\n    execute(instruction);\n    pc++;\n}\n```\n\n### Implementation\n\n**Status:** Complete (TypeScript VM)\n\n**Files:** `quarkdsl-web/lib/vm/`\n\n**Architecture:**\n\n- Stack-based VM for simplicity and portability\n- Custom bytecode format (not SSA IR)\n- Full quantum state vector simulation\n- Browser and Node.js compatible\n\n**VM Components:**\n\n| Component         | File                   | Description                      |\n| ----------------- | ---------------------- | -------------------------------- |\n| Lexer             | `lexer.ts`             | DFA-based tokenizer              |\n| Parser            | `parser.ts`            | Recursive descent parser         |\n| Compiler          | `compiler.ts`          | AST to bytecode compiler         |\n| VM                | `vm.ts`                | Stack-based bytecode interpreter |\n| Quantum Simulator | `quantum-simulator.ts` | 8-qubit state vector simulator   |\n| Quantum Gates     | `quantum-gates.ts`     | Gate implementations             |\n\n**Bytecode Opcodes:**\n\n```typescript\nenum Opcode {\n  // Stack operations\n  PUSH,\n  POP,\n  DUP,\n  // Arithmetic\n  ADD,\n  SUB,\n  MUL,\n  DIV,\n  MOD,\n  NEG,\n  // Comparison\n  EQ,\n  NE,\n  LT,\n  LE,\n  GT,\n  GE,\n  // Logic\n  AND,\n  OR,\n  NOT,\n  // Variables\n  LOAD,\n  STORE,\n  LOAD_GLOBAL,\n  STORE_GLOBAL,\n  // Control flow\n  JUMP,\n  JUMP_IF_FALSE,\n  CALL,\n  RETURN,\n  // Arrays\n  ARRAY_NEW,\n  ARRAY_GET,\n  ARRAY_SET,\n  ARRAY_LEN,\n  // Quantum operations\n  QUANTUM_H,\n  QUANTUM_X,\n  QUANTUM_Y,\n  QUANTUM_Z,",
       "type": "markdown",
       "keywords": [
         "theory",
+        "opcode",
+        "lexer",
+        "parser",
+        "ast",
+        "token",
+        "compile",
+        "quantum",
+        "type",
+        "ir",
+        "variable",
+        "if",
+        "qubit",
+        "gate"
+      ],
+      "startLine": 561,
+      "endLine": 640
+    },
+    {
+      "id": "THEORY.md:631-710",
+      "filePath": "THEORY.md",
+      "fileName": "THEORY.md",
+      "content": "  // Arrays\n  ARRAY_NEW,\n  ARRAY_GET,\n  ARRAY_SET,\n  ARRAY_LEN,\n  // Quantum operations\n  QUANTUM_H,\n  QUANTUM_X,\n  QUANTUM_Y,\n  QUANTUM_Z,\n  QUANTUM_RX,\n  QUANTUM_RY,\n  QUANTUM_RZ,\n  QUANTUM_CNOT,\n  QUANTUM_SWAP,\n  QUANTUM_TOFFOLI,\n  QUANTUM_MEASURE,\n  QUANTUM_RESET,\n}\n```\n\n**Quantum Simulator:**\n\nThe quantum simulator maintains a full state vector for up to 8 qubits (256 complex amplitudes):\n\n```typescript\nclass QuantumSimulator {\n  private stateVector: Complex[]; // 2^n amplitudes\n  private numQubits: number; // Max 8 qubits\n\n  applyGate(gate: QuantumGate, targets: number[]): void;\n  measure(qubit: number): number; // Returns 0 or 1\n  reset(): void;\n}\n```\n\n**Quantum Gates Implemented:**\n\n| Gate      | Matrix         | Description                           |\n| --------- | -------------- | ------------------------------------- |\n| H         | Hadamard       | Creates superposition                 |\n| X         | Pauli-X        | Bit flip (NOT)                        |\n| Y         | Pauli-Y        | Bit and phase flip                    |\n| Z         | Pauli-Z        | Phase flip                            |\n| RX(theta) | X-rotation     | Rotation around X-axis                |\n| RY(theta) | Y-rotation     | Rotation around Y-axis                |\n| RZ(theta) | Z-rotation     | Rotation around Z-axis                |\n| CNOT      | Controlled-NOT | Two-qubit entangling gate             |\n| SWAP      | Swap           | Exchanges two qubits                  |\n| Toffoli   | CCX            | Three-qubit controlled-controlled-NOT |\n\n**Execution Model:**\n\n```\nQuarkDSL Source\n    ↓\nLexer → Tokens\n    ↓\nParser → AST\n    ↓\nCompiler → Bytecode\n    ↓\nVM Execution\n    ├── Classical: Stack-based computation\n    ├── GPU: Array operations (JavaScript simulation)\n    └── Quantum: State vector simulation\n```\n\n**Example Execution:**\n\n```typescript\n// QuarkDSL code\n@quantum\nfn bell_state() -> int {\n    h(0);\n    cx(0, 1);\n    return measure(0);\n}\n\n// Compiled bytecode",
+      "type": "markdown",
+      "keywords": [
+        "theory",
+        "bell_state",
+        "lexer",
+        "parser",
+        "ast",
+        "token",
+        "compile",
+        "quantum",
+        "gpu",
+        "type",
+        "qubit",
+        "gate",
+        "measure"
+      ],
+      "startLine": 631,
+      "endLine": 710
+    },
+    {
+      "id": "THEORY.md:701-780",
+      "filePath": "THEORY.md",
+      "fileName": "THEORY.md",
+      "content": "```typescript\n// QuarkDSL code\n@quantum\nfn bell_state() -> int {\n    h(0);\n    cx(0, 1);\n    return measure(0);\n}\n\n// Compiled bytecode\n[\n  QUANTUM_H, 0,        // Apply H to qubit 0\n  QUANTUM_CNOT, 0, 1,  // Apply CNOT with control=0, target=1\n  QUANTUM_MEASURE, 0,  // Measure qubit 0\n  RETURN               // Return measurement result\n]\n\n// VM execution\n// 1. Initialize |00> state\n// 2. H gate: |00> -> (|00> + |10>)/sqrt(2)\n// 3. CNOT: (|00> + |10>)/sqrt(2) -> (|00> + |11>)/sqrt(2)\n// 4. Measure: Returns 0 or 1 with 50% probability each\n```\n\n---\n\n## Compiler Pipeline Summary\n\n### Native Compiler (Rust)\n\n```\nSource Code (.tgpu)\n    ↓\n[1. Lexical Analysis]\n    Regex → DFA → Tokens\n    ↓\n[2. Syntax Analysis]\n    Tokens → RDP → AST\n    ↓\n[3. Semantic Analysis]\n    Type Checking → Validated AST\n    ↓\n[4. IR Generation]\n    AST → Lowering → SSA IR\n    ↓\n[5. Optimization]\n    DCE, CSE → Optimized IR\n    ↓\n[6. Code Generation]\n    ├─→ WGSL Backend → .wgsl (GPU)\n    ├─→ Quantum Backend → .py (Qiskit)\n    └─→ Orchestrator Backend → .py (Hybrid)\n```\n\n### TypeScript VM\n\n```\nSource Code (.tgpu)\n    ↓\n[1. Lexical Analysis]\n    DFA Lexer → Tokens\n    ↓\n[2. Syntax Analysis]\n    RDP Parser → AST\n    ↓\n[3. Compilation]\n    AST → Bytecode\n    ↓\n[4. Execution]\n    Stack-based VM\n    ├─→ Classical operations\n    ├─→ GPU simulation (arrays)\n    └─→ Quantum simulation (state vector)\n```\n\n---\n\n## Theoretical Foundations\n\n### Chomsky Hierarchy",
+      "type": "markdown",
+      "keywords": [
+        "theory",
+        "bell_state",
+        "lexer",
+        "parser",
         "ast",
         "token",
         "compile",
@@ -2560,25 +2684,26 @@
         "lower",
         "backend",
         "orchestrator",
-        "expression",
-        "function",
-        "variable",
-        "if",
+        "qubit",
+        "gate",
+        "measure",
         "hybrid"
       ],
-      "startLine": 561,
-      "endLine": 640
+      "startLine": 701,
+      "endLine": 780
     },
     {
-      "id": "THEORY.md:631-675",
+      "id": "THEORY.md:771-822",
       "filePath": "THEORY.md",
       "fileName": "THEORY.md",
-      "content": "## Theoretical Foundations\n\n### Chomsky Hierarchy\n\nQuarkDSL uses different grammar types at different stages:\n\n| Level  | Grammar Type      | Used In           | Example                          |\n| ------ | ----------------- | ----------------- | -------------------------------- |\n| Type 3 | Regular           | Lexical Analysis  | `[a-zA-Z_][a-zA-Z0-9_]*`         |\n| Type 2 | Context-Free      | Syntax Analysis   | `Expression → Term + Expression` |\n| Type 1 | Context-Sensitive | Semantic Analysis | Type checking rules              |\n| Type 0 | Unrestricted      | Not used          | N/A                              |\n\n### Parsing Techniques Comparison\n\n| Technique         | Type      | Lookahead | Grammar | Used in QuarkDSL |\n| ----------------- | --------- | --------- | ------- | ---------------- |\n| Recursive Descent | Top-Down  | 1         | LL(1)   | Yes              |\n| LL Parser         | Top-Down  | k         | LL(k)   | No               |\n| LR Parser         | Bottom-Up | 1         | LR(1)   | No               |\n| LALR Parser       | Bottom-Up | 1         | LALR(1) | No               |\n\n### Optimization Classification\n\n| Type            | Scope         | Examples                                   | Implemented    |\n| --------------- | ------------- | ------------------------------------------ | -------------- |\n| Local           | Basic Block   | Constant folding, algebraic simplification | Partial        |\n| Global          | Function      | DCE, CSE, constant propagation             | Yes (DCE, CSE) |\n| Interprocedural | Whole Program | Inlining, dead function elimination        | No             |\n| Loop            | Loops         | Loop unrolling, invariant code motion      | Partial        |\n\n---\n\n## References\n\n1. Aho, A. V., Lam, M. S., Sethi, R., & Ullman, J. D. (2006). Compilers: Principles, Techniques, and Tools (2nd ed.). Addison-Wesley.\n\n2. Appel, A. W. (2004). Modern Compiler Implementation in ML. Cambridge University Press.\n\n3. Cooper, K. D., & Torczon, L. (2011). Engineering a Compiler (2nd ed.). Morgan Kaufmann.\n\n4. Cytron, R., Ferrante, J., Rosen, B. K., Wegman, M. N., & Zadeck, F. K. (1991). Efficiently computing static single assignment form and the control dependence graph. ACM Transactions on Programming Languages and Systems, 13(4), 451-490.\n\n5. Muchnick, S. S. (1997). Advanced Compiler Design and Implementation. Morgan Kaufmann.\n",
+      "content": "    ├─→ Classical operations\n    ├─→ GPU simulation (arrays)\n    └─→ Quantum simulation (state vector)\n```\n\n---\n\n## Theoretical Foundations\n\n### Chomsky Hierarchy\n\nQuarkDSL uses different grammar types at different stages:\n\n| Level  | Grammar Type      | Used In           | Example                          |\n| ------ | ----------------- | ----------------- | -------------------------------- |\n| Type 3 | Regular           | Lexical Analysis  | `[a-zA-Z_][a-zA-Z0-9_]*`         |\n| Type 2 | Context-Free      | Syntax Analysis   | `Expression → Term + Expression` |\n| Type 1 | Context-Sensitive | Semantic Analysis | Type checking rules              |\n| Type 0 | Unrestricted      | Not used          | N/A                              |\n\n### Parsing Techniques Comparison\n\n| Technique         | Type      | Lookahead | Grammar | Used in QuarkDSL |\n| ----------------- | --------- | --------- | ------- | ---------------- |\n| Recursive Descent | Top-Down  | 1         | LL(1)   | Yes              |\n| LL Parser         | Top-Down  | k         | LL(k)   | No               |\n| LR Parser         | Bottom-Up | 1         | LR(1)   | No               |\n| LALR Parser       | Bottom-Up | 1         | LALR(1) | No               |\n\n### Optimization Classification\n\n| Type            | Scope         | Examples                                   | Implemented    |\n| --------------- | ------------- | ------------------------------------------ | -------------- |\n| Local           | Basic Block   | Constant folding, algebraic simplification | Partial        |\n| Global          | Function      | DCE, CSE, constant propagation             | Yes (DCE, CSE) |\n| Interprocedural | Whole Program | Inlining, dead function elimination        | No             |\n| Loop            | Loops         | Loop unrolling, invariant code motion      | Partial        |\n\n---\n\n## References\n\n1. Aho, A. V., Lam, M. S., Sethi, R., & Ullman, J. D. (2006). Compilers: Principles, Techniques, and Tools (2nd ed.). Addison-Wesley.\n\n2. Appel, A. W. (2004). Modern Compiler Implementation in ML. Cambridge University Press.\n\n3. Cooper, K. D., & Torczon, L. (2011). Engineering a Compiler (2nd ed.). Morgan Kaufmann.\n\n4. Cytron, R., Ferrante, J., Rosen, B. K., Wegman, M. N., & Zadeck, F. K. (1991). Efficiently computing static single assignment form and the control dependence graph. ACM Transactions on Programming Languages and Systems, 13(4), 451-490.\n\n5. Muchnick, S. S. (1997). Advanced Compiler Design and Implementation. Morgan Kaufmann.\n",
       "type": "markdown",
       "keywords": [
         "theory",
         "parser",
         "compile",
+        "quantum",
+        "gpu",
         "type",
         "check",
         "expression",
@@ -2586,8 +2711,8 @@
         "loop",
         "if"
       ],
-      "startLine": 631,
-      "endLine": 675
+      "startLine": 771,
+      "endLine": 822
     }
   ],
   "fileList": [

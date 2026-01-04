@@ -1,6 +1,6 @@
 # QuarkDSL
 
-Hybrid Quantum-Classical Compiler
+Hybrid Quantum-Classical Compiler with TypeScript Virtual Machine
 
 ---
 
@@ -8,15 +8,16 @@ Hybrid Quantum-Classical Compiler
 
 | Property         | Value                                                               |
 | ---------------- | ------------------------------------------------------------------- |
-| **Type**         | Source-to-source compiler (transpiler)                              |
+| **Type**         | Source-to-source compiler (transpiler) + Virtual Machine            |
 | **Input**        | QuarkDSL (`.tgpu`)                                                  |
 | **Output**       | WGSL (WebGPU Shading Language), Qiskit Python, Python Orchestrator  |
-| **Language**     | Rust                                                                |
+| **Language**     | Rust (native compiler), TypeScript (VM)                             |
 | **Parser**       | RDP (Recursive Descent Parser), LL(1)-style                         |
-| **Lexer**        | DFA (Deterministic Finite Automaton)-based (Logos library)          |
-| **IR**           | SSA (Static Single Assignment)                                      |
-| **Backends**     | 3 (WGSL, Quantum, Orchestrator)                                     |
+| **Lexer**        | DFA (Deterministic Finite Automaton)-based                          |
+| **IR**           | SSA (Static Single Assignment) / Stack-based bytecode (VM)          |
+| **Backends**     | 3 (WGSL, Quantum, Orchestrator) + TypeScript VM                     |
 | **Optimization** | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) |
+| **Runtime**      | TypeScript VM with quantum simulator (8 qubits)                     |
 | **Status**       | Complete                                                            |
 
 ---
@@ -507,6 +508,57 @@ python demo.py
 ```
 
 **Documentation:** See `docs/IBM_QUANTUM_INTEGRATION.md` for details.
+
+---
+
+## TypeScript Virtual Machine
+
+The TypeScript VM provides an alternative execution path that runs entirely in the browser.
+
+### Features
+
+- Stack-based bytecode interpreter
+- Full quantum state vector simulation (8 qubits, 256 amplitudes)
+- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli
+- Probabilistic measurement with state collapse
+- Web playground for interactive development
+
+### Web Playground
+
+The TypeScript VM powers the interactive web playground at `quarkdsl-web/`. Users can write QuarkDSL code and execute it directly in the browser with real-time quantum simulation.
+
+### VM Architecture
+
+```
+QuarkDSL Source
+    |
+Lexer (TypeScript) -> Tokens
+    |
+Parser (TypeScript) -> AST
+    |
+Compiler -> Bytecode
+    |
+VM Execution
+    |-- Classical operations (stack-based)
+    |-- GPU operations (array simulation)
+    +-- Quantum operations (state vector simulation)
+```
+
+### Built-in Functions
+
+| Function                     | Description               |
+| ---------------------------- | ------------------------- |
+| `print(x)`                   | Print any value           |
+| `print_int(n)`               | Print integer             |
+| `print_float(n)`             | Print float               |
+| `print_array(arr)`           | Print array               |
+| `sqrt(x)`                    | Square root               |
+| `sin(x)`, `cos(x)`, `tan(x)` | Trigonometric functions   |
+| `exp(x)`, `log(x)`           | Exponential and logarithm |
+| `abs(x)`                     | Absolute value            |
+| `min(a,b)`, `max(a,b)`       | Minimum and maximum       |
+| `len(arr)`                   | Array length              |
+| `random()`                   | Random number [0,1)       |
 
 ---
 

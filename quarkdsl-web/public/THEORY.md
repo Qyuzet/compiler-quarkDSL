@@ -570,34 +570,129 @@ while (pc < bytecode.length) {
 
 ### Implementation
 
-**Status:** To be implemented
+**Status:** Complete (TypeScript VM)
 
-**Planned Architecture:**
+**Files:** `quarkdsl-web/lib/vm/`
 
-- Stack-based VM for simplicity
-- Direct interpretation of SSA IR
-- No separate bytecode encoding (IR is the bytecode)
-- Support for quantum and GPU simulation
+**Architecture:**
+
+- Stack-based VM for simplicity and portability
+- Custom bytecode format (not SSA IR)
+- Full quantum state vector simulation
+- Browser and Node.js compatible
 
 **VM Components:**
 
-- Operand Stack: For expression evaluation
-- Local Variables: For SSA variables
-- Quantum State: For quantum register simulation
-- GPU Memory: For array/tensor simulation
-- Call Stack: For function calls
+| Component         | File             | Description                                  |
+| ----------------- | ---------------- | -------------------------------------------- |
+| Lexer             | `lexer.ts`       | DFA-based tokenization with comment handling |
+| Parser            | `parser.ts`      | Recursive descent parser producing AST       |
+| Compiler          | `compiler.ts`    | AST to bytecode compilation                  |
+| Interpreter       | `interpreter.ts` | Stack-based bytecode execution               |
+| Quantum Simulator | `quantum.ts`     | 8-qubit state vector simulation              |
+
+**Bytecode Opcodes:**
+
+```typescript
+enum OpCode {
+  Push,
+  Pop,
+  Load,
+  Store, // Stack operations
+  Add,
+  Sub,
+  Mul,
+  Div,
+  Mod, // Arithmetic
+  Lt,
+  Gt,
+  Le,
+  Ge,
+  Eq,
+  Ne, // Comparison
+  And,
+  Or,
+  Not, // Logical
+  Jump,
+  JumpIfFalse, // Control flow
+  Call,
+  Return,
+  BuiltinCall, // Functions
+  ArrayNew,
+  ArrayGet,
+  ArraySet, // Arrays
+  QuantumGate,
+  QuantumMeasure, // Quantum operations
+}
+```
+
+**Quantum Simulator:**
+
+The quantum simulator maintains a full state vector for 8 qubits (256 complex amplitudes).
+
+| Gate    | Matrix         | Description                           |
+| ------- | -------------- | ------------------------------------- |
+| H       | Hadamard       | Creates superposition                 |
+| X       | Pauli-X        | Bit flip (NOT gate)                   |
+| Y       | Pauli-Y        | Bit and phase flip                    |
+| Z       | Pauli-Z        | Phase flip                            |
+| RX      | Rotation-X     | Rotation around X-axis                |
+| RY      | Rotation-Y     | Rotation around Y-axis                |
+| RZ      | Rotation-Z     | Rotation around Z-axis                |
+| CNOT    | Controlled-NOT | Entanglement gate                     |
+| SWAP    | Swap           | Exchanges two qubits                  |
+| Toffoli | CCX            | Three-qubit controlled-controlled-NOT |
 
 **Execution Model:**
 
 ```
-IR Instructions → VM Interpreter → Results
+QuarkDSL Source
+    ↓
+Lexer → Tokens
+    ↓
+Parser → AST
+    ↓
+Compiler → Bytecode
+    ↓
+VM Execution
+    ├── Classical: Stack-based computation
+    ├── GPU: Array operations (JavaScript simulation)
+    └── Quantum: State vector simulation
 ```
 
-The VM will provide an alternative execution path alongside code generation backends.
+**Example Execution:**
+
+```typescript
+// QuarkDSL code
+@quantum
+fn bell_state() -> int {
+    h(0);
+    cx(0, 1);
+    return measure(0);
+}
+
+// Compiled bytecode
+[
+  QUANTUM_H, 0,        // Apply H to qubit 0
+  QUANTUM_CNOT, 0, 1,  // Apply CNOT with control=0, target=1
+  QUANTUM_MEASURE, 0,  // Measure qubit 0
+  RETURN               // Return measurement result
+]
+
+// VM execution trace
+1. Apply Hadamard to qubit 0: |00⟩ → (|00⟩ + |10⟩)/√2
+2. Apply CNOT(0,1): (|00⟩ + |10⟩)/√2 → (|00⟩ + |11⟩)/√2
+3. Measure qubit 0: Collapse to |00⟩ or |11⟩ with 50% probability each
+4. Return: 0 or 1
+```
+
+The TypeScript VM provides an alternative execution path that runs entirely in the browser, enabling the web playground functionality.
 
 ---
 
 ## Compiler Pipeline Summary
+
+### Native Compiler (Rust)
 
 ```
 Source Code (.tgpu)
@@ -621,9 +716,27 @@ Source Code (.tgpu)
     ├─→ WGSL Backend → .wgsl (GPU)
     ├─→ Quantum Backend → .py (Qiskit)
     └─→ Orchestrator Backend → .py (Hybrid)
+```
+
+### TypeScript VM
+
+```
+Source Code (.tgpu)
     ↓
-[7. Runtime (Optional)]
-    VM Interpreter → Direct Execution
+[1. Lexical Analysis]
+    DFA Lexer → Tokens
+    ↓
+[2. Syntax Analysis]
+    RDP Parser → AST
+    ↓
+[3. Compilation]
+    AST → Bytecode
+    ↓
+[4. Execution]
+    Stack-based VM
+    ├─→ Classical operations
+    ├─→ GPU simulation (arrays)
+    └─→ Quantum simulation (state vector)
 ```
 
 ---

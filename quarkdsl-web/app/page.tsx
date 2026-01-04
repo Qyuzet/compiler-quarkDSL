@@ -680,7 +680,17 @@ export default function Home() {
         setOutput(finalOutput);
         setLogs(data.logs);
       } else {
-        setError(data.error + "\n" + (data.details || ""));
+        if (data.isProductionLimit) {
+          setError(
+            "Demo Mode: Compilation is not available in the hosted version.\n\n" +
+              "To use the full compiler, please clone the repository and run locally:\n" +
+              "  git clone https://github.com/your-repo/quarkdsl\n" +
+              "  cd quarkdsl && cargo build --release\n" +
+              "  cd quarkdsl-web && npm run dev"
+          );
+        } else {
+          setError(data.error + "\n" + (data.details || ""));
+        }
       }
     } catch (err: any) {
       setError("Network error: " + err.message);
@@ -740,7 +750,17 @@ export default function Home() {
         setLogs(logs);
         setOutput(data.compiledCode || "");
       } else {
-        setError(data.error + "\n" + (data.details || ""));
+        if (data.isProductionLimit) {
+          setError(
+            "Demo Mode: Code execution is not available in the hosted version.\n\n" +
+              "To run QuarkDSL code, please clone the repository and run locally:\n" +
+              "  git clone https://github.com/your-repo/quarkdsl\n" +
+              "  cd quarkdsl && cargo build --release\n" +
+              "  cd quarkdsl-web && npm run dev"
+          );
+        } else {
+          setError(data.error + "\n" + (data.details || ""));
+        }
         if (useQuantumComputer && ibmApiKey) {
           setJobStatus("ERROR");
         }

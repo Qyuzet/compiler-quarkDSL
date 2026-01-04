@@ -65,21 +65,29 @@ export default function TableOfContents({
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
-    if (element) {
-      if (scrollContainerId) {
-        const container = document.getElementById(scrollContainerId);
-        const viewport = container?.querySelector(
-          "[data-radix-scroll-area-viewport]"
-        );
-        if (viewport) {
-          const elementTop = element.offsetTop;
-          viewport.scrollTo({ top: elementTop - 20, behavior: "smooth" });
-        }
-      } else {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!element) return;
+
+    if (scrollContainerId) {
+      const container = document.getElementById(scrollContainerId);
+      const viewport = container?.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      ) as HTMLElement | null;
+
+      if (viewport) {
+        // Calculate offset relative to the viewport
+        const viewportRect = viewport.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const currentScrollTop = viewport.scrollTop;
+        const targetScrollTop =
+          currentScrollTop + elementRect.top - viewportRect.top - 20;
+
+        viewport.scrollTo({ top: targetScrollTop, behavior: "smooth" });
       }
-      onNavigate?.();
+    } else {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+
+    onNavigate?.();
   };
 
   if (toc.length === 0) return null;

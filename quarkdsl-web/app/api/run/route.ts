@@ -4,10 +4,59 @@ import { promisify } from "util";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { tmpdir } from "os";
+import { execute, formatResult } from "@/lib/vm";
 
 const execAsync = promisify(exec);
 
+// Check if we're in a production/serverless environment
+const isProduction =
+  process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+
 export async function POST(request: NextRequest) {
+  // In production (Vercel), use the TypeScript VM
+  if (isProduction) {
+    try {
+      const { code } = await request.json();
+
+      if (!code) {
+        return NextResponse.json(
+          { success: false, error: "No code provided" },
+          { status: 400 }
+        );
+      }
+
+      const result = execute(code);
+
+      if (!result.success) {
+        return NextResponse.json({
+          success: false,
+          error: result.error || "Execution failed",
+        });
+      }
+
+      const formattedOutput = formatResult(result);
+
+      return NextResponse.json({
+        success: true,
+        result: formattedOutput,
+        compiledCode: "// Executed using QuarkDSL TypeScript VM",
+        logs: `Execution time: ${result.executionTime.toFixed(2)}ms`,
+        isVMExecuted: true,
+        quantumCounts: result.quantumCounts
+          ? Object.fromEntries(result.quantumCounts)
+          : undefined,
+        gateLog: result.gateLog,
+      });
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return NextResponse.json(
+        { success: false, error: errorMessage },
+        { status: 500 }
+      );
+    }
+  }
+
   try {
     const {
       code,
@@ -33,11 +82,12 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(inputFile, code);
 
     const projectRoot = path.resolve(process.cwd(), "..");
+    const isWindows = process.platform === "win32";
     const quarkdslBin = path.join(
       projectRoot,
       "target",
       "release",
-      "quarkdsl.exe"
+      isWindows ? "quarkdsl.exe" : "quarkdsl"
     );
 
     const optimizeFlag = optimize ? "--optimize" : "";

@@ -324,6 +324,26 @@ export class Interpreter {
         this.stack.push(0);
         break;
 
+      case "print_int":
+        this.output.push(String(Math.floor(args[0] as number)));
+        this.stack.push(0);
+        break;
+
+      case "print_float":
+        this.output.push(String(args[0] as number));
+        this.stack.push(0);
+        break;
+
+      case "print_bool":
+        this.output.push(args[0] ? "true" : "false");
+        this.stack.push(0);
+        break;
+
+      case "print_array":
+        this.output.push(this.formatValue(args[0]));
+        this.stack.push(0);
+        break;
+
       case "sqrt":
         this.stack.push(Math.sqrt(args[0] as number));
         break;
@@ -378,6 +398,48 @@ export class Interpreter {
 
       case "random":
         this.stack.push(Math.random());
+        break;
+
+      case "pow":
+        this.stack.push(Math.pow(args[0] as number, args[1] as number));
+        break;
+
+      case "atan2":
+        this.stack.push(Math.atan2(args[0] as number, args[1] as number));
+        break;
+
+      case "asin":
+        this.stack.push(Math.asin(args[0] as number));
+        break;
+
+      case "acos":
+        this.stack.push(Math.acos(args[0] as number));
+        break;
+
+      case "atan":
+        this.stack.push(Math.atan(args[0] as number));
+        break;
+
+      case "pi":
+        this.stack.push(Math.PI);
+        break;
+
+      case "sum":
+        if (Array.isArray(args[0])) {
+          const arr = args[0] as number[];
+          this.stack.push(arr.reduce((a, b) => a + b, 0));
+        } else {
+          this.stack.push(args[0]);
+        }
+        break;
+
+      case "mean":
+        if (Array.isArray(args[0])) {
+          const arr = args[0] as number[];
+          this.stack.push(arr.reduce((a, b) => a + b, 0) / arr.length);
+        } else {
+          this.stack.push(args[0]);
+        }
         break;
 
       default:

@@ -283,10 +283,18 @@ export class Compiler {
     const builtins = [
       "print",
       "println",
+      "print_int",
+      "print_float",
+      "print_bool",
+      "print_array",
       "sqrt",
       "sin",
       "cos",
       "tan",
+      "asin",
+      "acos",
+      "atan",
+      "atan2",
       "exp",
       "log",
       "abs",
@@ -295,8 +303,12 @@ export class Compiler {
       "round",
       "min",
       "max",
+      "pow",
       "len",
       "random",
+      "pi",
+      "sum",
+      "mean",
     ];
     return builtins.includes(name);
   }

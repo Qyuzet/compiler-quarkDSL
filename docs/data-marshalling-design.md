@@ -27,13 +27,13 @@ fn main() {
 
 ## 📊 Data Type Mapping
 
-| QuarkDSL Type | GPU (WGSL) | Quantum (Qiskit) | Conversion Method |
-|---------------|------------|------------------|-------------------|
-| `[float]` | `array<f32>` | Angle encoding | `ry(qubit, angle)` |
-| `[int]` | `array<i32>` | Basis encoding | `x(qubit)` if bit=1 |
-| `tensor<float>` | `array<f32>` | Amplitude encoding | Statevector |
-| `qstate` | N/A | `QuantumCircuit` | Direct |
-| `int` (result) | `i32` | Measurement | `measure()` |
+| QuarkDSL Type   | GPU (WGSL)   | Quantum (Qiskit)   | Conversion Method   |
+| --------------- | ------------ | ------------------ | ------------------- |
+| `[float]`       | `array<f32>` | Angle encoding     | `ry(qubit, angle)`  |
+| `[int]`         | `array<i32>` | Basis encoding     | `x(qubit)` if bit=1 |
+| `tensor<float>` | `array<f32>` | Amplitude encoding | Statevector         |
+| `qstate`        | N/A          | `QuantumCircuit`   | Direct              |
+| `int` (result)  | `i32`        | Measurement        | `measure()`         |
 
 ---
 
@@ -55,11 +55,13 @@ circuit.ry(0.2, qr[3])  # qubit 3 ← 0.2
 ```
 
 **Pros:**
+
 - ✅ Simple and efficient
 - ✅ Works for any float values
 - ✅ Common in VQE/QAOA
 
 **Cons:**
+
 - ⚠️ Requires N qubits for N values
 
 ---
@@ -77,10 +79,12 @@ circuit.initialize([0.5, 0.5, 0.5, 0.5], qr)
 ```
 
 **Pros:**
+
 - ✅ Exponentially efficient (N values → log₂(N) qubits)
 - ✅ Good for large datasets
 
 **Cons:**
+
 - ⚠️ Requires normalization (sum of squares = 1)
 - ⚠️ More complex
 
@@ -104,10 +108,12 @@ counts = job.result().get_counts()
 ```
 
 **Pros:**
+
 - ✅ Standard quantum workflow
 - ✅ Preserves probabilistic nature
 
 **Cons:**
+
 - ⚠️ Requires multiple shots
 - ⚠️ Lossy (quantum → classical)
 
@@ -118,6 +124,7 @@ counts = job.result().get_counts()
 ### **Phase 5A: Detect Cross-Domain Calls** ✅ (Already done!)
 
 We already detect cross-domain calls in typecheck:
+
 ```
 INFO: Cross-domain call from Classical to Gpu function 'gpu_matmul'
 INFO: Cross-domain call from Classical to Quantum function 'quantum_encode'
@@ -141,17 +148,20 @@ When we see a cross-domain call, insert conversion instructions:
 ### **Phase 5C: Backend Code Generation**
 
 **GPU Backend (`src/backend/wgsl.rs`):**
+
 - Generate WGSL compute shader
 - Export results to buffer
 - Return to Python orchestrator
 
 **Quantum Backend (`src/backend/quantum.rs`):**
+
 - Generate Qiskit circuit
 - Add encoding gates (ry, initialize)
 - Add measurement
 - Return to Python orchestrator
 
 **Python Orchestrator (NEW: `src/backend/orchestrator.rs`):**
+
 - Generate Python script that:
   1. Runs GPU code (WebGPU)
   2. Extracts GPU results
@@ -165,6 +175,7 @@ When we see a cross-domain call, insert conversion instructions:
 ## 📝 Example: Full Pipeline
 
 ### **QuarkDSL Code:**
+
 ```rust
 @gpu
 fn preprocess(data: [float]) -> [float] {
@@ -192,6 +203,7 @@ fn main() -> int {
 ```
 
 ### **Generated Python Orchestrator:**
+
 ```python
 import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
@@ -208,13 +220,13 @@ def encode_to_quantum(params):
     qr = QuantumRegister(2, 'q')
     cr = ClassicalRegister(2, 'c')
     circuit = QuantumCircuit(qr, cr)
-    
+
     # Angle encoding
     circuit.ry(params[0], qr[0])
     circuit.ry(params[1], qr[1])
     circuit.cx(qr[0], qr[1])
     circuit.measure(qr[0], cr[0])
-    
+
     return circuit
 
 # Step 3: Run quantum code
@@ -223,7 +235,7 @@ def quantum_process(circuit):
     backend = service.backend("ibm_brisbane")
     job = backend.run(circuit, shots=1024)
     counts = job.result().get_counts()
-    
+
     # Extract result (most common measurement)
     result = int(max(counts, key=counts.get)[0])
     return result
@@ -231,14 +243,14 @@ def quantum_process(circuit):
 # Main orchestration
 def main():
     data = np.array([0.5, 0.3, 0.7, 0.2])
-    
+
     # GPU execution
     features = preprocess_gpu(data)
-    
+
     # Quantum execution
     circuit = encode_to_quantum(features)
     result = quantum_process(circuit)
-    
+
     return result
 
 if __name__ == "__main__":
@@ -247,13 +259,25 @@ if __name__ == "__main__":
 
 ---
 
-## 🎯 Implementation Plan
+## Implementation Status
 
-1. **✅ Phase 5A:** Detect cross-domain calls (DONE)
-2. **[ ] Phase 5B:** Add conversion IR instructions
-3. **[ ] Phase 5C:** Generate conversion code in backends
-4. **[ ] Phase 5D:** Generate Python orchestrator
-5. **[ ] Phase 5E:** Test end-to-end
+All phases are complete:
 
-**Next:** Implement Phase 5B - Add conversion instructions to IR!
+1. **Phase 5A:** Detect cross-domain calls - COMPLETE
+2. **Phase 5B:** Add conversion IR instructions - COMPLETE
+3. **Phase 5C:** Generate conversion code in backends - COMPLETE
+4. **Phase 5D:** Generate Python orchestrator - COMPLETE
+5. **Phase 5E:** Test end-to-end - COMPLETE
+6. **Phase 6:** TypeScript VM with quantum simulation - COMPLETE
 
+### TypeScript VM Implementation
+
+The TypeScript VM provides an alternative execution path with built-in quantum simulation:
+
+- Stack-based bytecode interpreter
+- 8-qubit quantum state vector simulator
+- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli
+- Probabilistic measurement with state collapse
+- Web playground for interactive development
+
+See `quarkdsl-web/lib/vm/` for implementation details.

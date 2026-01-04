@@ -143,22 +143,22 @@ fn vqe_main() -> tensor<float> {
     // Initialize on GPU
     let params = init_random_gpu(4);
     let hamiltonian = [1.0, 0.5, 0.5, 1.0];
-    
+
     // Optimization loop
     for iter in 0..100 {
         // GPU → Quantum (automatic)
         let qubits = ansatz(params, [q0, q1, q2, q3]);
-        
+
         // Quantum execution
         let energy = measure_energy(qubits, hamiltonian);
-        
+
         // Quantum → GPU (automatic)
         let grad = compute_gradient_gpu(energy);
-        
+
         // GPU optimization
         params = optimize_params(params, grad);
     }
-    
+
     return params;
 }
 ```
@@ -173,28 +173,28 @@ def vqe_main():
     # GPU initialization
     params = torch.randn(4).cuda()
     hamiltonian = torch.tensor([1.0, 0.5, 0.5, 1.0]).cuda()
-    
+
     for iter in range(100):
         # AUTO: GPU → Quantum conversion
         params_cpu = params.cpu().numpy()
-        
+
         # Quantum execution
         circuit = QuantumCircuit(4)
         for i in range(4):
             circuit.ry(params_cpu[i], i)
         for i in range(3):
             circuit.cx(i, i+1)
-        
+
         result = execute(circuit, backend).result()
         energy_cpu = compute_expectation(result, hamiltonian.cpu().numpy())
-        
+
         # AUTO: Quantum → GPU conversion
         energy = torch.tensor(energy_cpu).cuda()
-        
+
         # GPU optimization
         grad = torch.autograd.grad(energy, params)[0]
         params = params - 0.01 * grad
-    
+
     return params
 ```
 
@@ -209,9 +209,9 @@ def vqe_main():
 
 ### Code Generation
 
-1. **GPU functions** → Generate WGSL compute shaders
-2. **Quantum functions** → Generate Qiskit circuits
-3. **Hybrid orchestrator** → Generate Python glue code with:
+1. **GPU functions** - Generate WGSL compute shaders
+2. **Quantum functions** - Generate Qiskit circuits
+3. **Hybrid orchestrator** - Generate Python glue code with:
    - GPU execution (via WebGPU or PyTorch)
    - Quantum execution (via Qiskit)
    - Automatic data marshalling
@@ -223,12 +223,25 @@ def vqe_main():
 3. **Caching**: Cache conversion results when possible
 4. **Pipelining**: Overlap GPU and Quantum execution
 
-## 6. Next Steps
+## 6. Implementation Status
 
-1. Extend lexer with `@gpu`, `@quantum` tokens
-2. Extend parser with annotation support
-3. Add `tensor<T>` and `qstate` types to AST
-4. Extend type checker for cross-domain calls
-5. Extend IR with domain markers
-6. Implement hybrid code generation
+All features are complete:
 
+1. Lexer with `@gpu`, `@quantum` tokens - COMPLETE
+2. Parser with annotation support - COMPLETE
+3. `tensor<T>` and `qstate` types in AST - COMPLETE
+4. Type checker for cross-domain calls - COMPLETE
+5. IR with domain markers - COMPLETE
+6. Hybrid code generation - COMPLETE
+7. TypeScript VM with quantum simulation - COMPLETE
+
+### TypeScript VM
+
+The TypeScript VM provides an alternative execution path:
+
+- Stack-based bytecode interpreter
+- 8-qubit quantum state vector simulator
+- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli
+- Web playground for interactive development
+
+See `quarkdsl-web/lib/vm/` for implementation details.

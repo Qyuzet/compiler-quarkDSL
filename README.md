@@ -1,6 +1,6 @@
 # QuarkDSL
 
-Hybrid Quantum-Classical Compiler
+Hybrid Quantum-Classical Compiler with TypeScript Virtual Machine
 
 ---
 
@@ -8,15 +8,16 @@ Hybrid Quantum-Classical Compiler
 
 | Property         | Value                                                               |
 | ---------------- | ------------------------------------------------------------------- |
-| **Type**         | Source-to-source compiler (transpiler)                              |
+| **Type**         | Source-to-source compiler (transpiler) + Virtual Machine            |
 | **Input**        | QuarkDSL (`.tgpu`)                                                  |
 | **Output**       | WGSL (WebGPU Shading Language), Qiskit Python, Python Orchestrator  |
-| **Language**     | Rust                                                                |
+| **Language**     | Rust (native compiler), TypeScript (VM)                             |
 | **Parser**       | RDP (Recursive Descent Parser), LL(1)-style                         |
-| **Lexer**        | DFA (Deterministic Finite Automaton)-based (Logos library)          |
-| **IR**           | SSA (Static Single Assignment)                                      |
-| **Backends**     | 3 (WGSL, Quantum, Orchestrator)                                     |
+| **Lexer**        | DFA (Deterministic Finite Automaton)-based                          |
+| **IR**           | SSA (Static Single Assignment) / Stack-based bytecode (VM)          |
+| **Backends**     | 3 (WGSL, Quantum, Orchestrator) + TypeScript VM                     |
 | **Optimization** | DCE (Dead Code Elimination), CSE (Common Subexpression Elimination) |
+| **Runtime**      | TypeScript VM with quantum simulator (8 qubits)                     |
 | **Status**       | Complete                                                            |
 
 ---
@@ -156,10 +157,11 @@ IR (Intermediate Representation) Lowering → SSA IR (auto-conversion insertion)
     ↓
 Optimization → DCE (Dead Code Elimination), CSE (Common Subexpression Elimination)
     ↓
-Code Generation
+Code Generation / Execution
     ├── WGSL (WebGPU Shading Language) Backend (GPU shaders)
     ├── Quantum Backend (Qiskit circuits)
-    └── Orchestrator Backend (Hybrid Python)
+    ├── Orchestrator Backend (Hybrid Python)
+    └── TypeScript VM (Direct execution with quantum simulation)
 ```
 
 ---
@@ -189,6 +191,17 @@ Code Generation
 | WGSL         | `wgsl.rs`         | WebGPU | `.wgsl` (WebGPU Shading Language) shaders |
 | Quantum      | `quantum.rs`      | Qiskit | `.py` circuits                            |
 | Orchestrator | `orchestrator.rs` | Python | `.py` hybrid script                       |
+
+### Runtime (TypeScript VM)
+
+| Component         | File                   | Description                              |
+| ----------------- | ---------------------- | ---------------------------------------- |
+| Lexer             | `lexer.ts`             | DFA-based tokenizer                      |
+| Parser            | `parser.ts`            | Recursive descent parser                 |
+| Compiler          | `compiler.ts`          | AST to bytecode compiler                 |
+| Virtual Machine   | `vm.ts`                | Stack-based bytecode interpreter         |
+| Quantum Simulator | `quantum-simulator.ts` | 8-qubit quantum state simulator          |
+| Quantum Gates     | `quantum-gates.ts`     | H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, etc. |
 
 ---
 
@@ -369,6 +382,58 @@ cargo clean
 
 ---
 
+## TypeScript Virtual Machine
+
+QuarkDSL includes a TypeScript-based virtual machine for direct execution in web browsers and Node.js environments.
+
+### Features
+
+- Stack-based bytecode interpreter
+- 8-qubit quantum simulator with full state vector simulation
+- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli
+- Measurement with probabilistic collapse
+- GPU function simulation via JavaScript arrays
+
+### Web Playground
+
+The TypeScript VM powers the interactive web playground at `quarkdsl-web/`. Users can write QuarkDSL code and execute it directly in the browser with real-time quantum simulation.
+
+### VM Architecture
+
+```
+QuarkDSL Source
+    ↓
+Lexer (TypeScript) → Tokens
+    ↓
+Parser (TypeScript) → AST
+    ↓
+Compiler → Bytecode
+    ↓
+VM Execution
+    ├── Classical operations (stack-based)
+    ├── GPU operations (array simulation)
+    └── Quantum operations (state vector simulation)
+```
+
+### Bytecode Instructions
+
+| Opcode          | Description              |
+| --------------- | ------------------------ |
+| PUSH            | Push constant onto stack |
+| POP             | Pop value from stack     |
+| ADD/SUB/MUL/DIV | Arithmetic operations    |
+| LOAD/STORE      | Variable access          |
+| CALL            | Function call            |
+| RETURN          | Return from function     |
+| JUMP/JUMPIF     | Control flow             |
+| QUANTUM_H       | Apply Hadamard gate      |
+| QUANTUM_X/Y/Z   | Apply Pauli gates        |
+| QUANTUM_RY      | Apply RY rotation        |
+| QUANTUM_CNOT    | Apply CNOT gate          |
+| QUANTUM_MEASURE | Measure qubit            |
+
+---
+
 ## Example
 
 ### Input (`hybrid.tgpu`)
@@ -432,13 +497,17 @@ def main(input):
 
 | Metric                                        | Value  |
 | --------------------------------------------- | ------ |
-| Total LOC (Lines of Code)                     | ~3,500 |
-| Rust files                                    | 13     |
+| Total LOC (Lines of Code)                     | ~6,500 |
+| Rust files (native compiler)                  | 13     |
+| TypeScript files (VM)                         | 12     |
 | Token types                                   | 47     |
 | AST (Abstract Syntax Tree) node types         | 8      |
 | IR (Intermediate Representation) instructions | 10     |
+| VM bytecode opcodes                           | 25+    |
 | Optimization passes                           | 2      |
-| Backends                                      | 3      |
+| Backends                                      | 4      |
+| Quantum gates supported (VM)                  | 10     |
+| Max qubits (VM simulator)                     | 8      |
 | Example programs                              | 7      |
 | Build errors                                  | 0      |
 | Build warnings                                | 0      |
@@ -464,6 +533,15 @@ def main(input):
 - WGSL (WebGPU Shading Language): GPU compute shaders
 - Qiskit: Quantum circuits
 - Orchestrator: Hybrid execution
+- TypeScript VM: Browser-based execution with quantum simulation
+
+### TypeScript Virtual Machine
+
+- Stack-based bytecode interpreter
+- Full quantum state vector simulation (8 qubits, 256 amplitudes)
+- Quantum gates: H, X, Y, Z, RX, RY, RZ, CNOT, SWAP, Toffoli
+- Probabilistic measurement with state collapse
+- Web playground for interactive development
 
 ### IBM Quantum Hardware Support
 

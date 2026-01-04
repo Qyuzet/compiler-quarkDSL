@@ -127,10 +127,21 @@ export class Lexer {
     }
   }
 
-  private skipComment(): void {
+  private skipComment(): boolean {
     if (this.peek() === "/" && this.peek(1) === "/") {
       while (this.peek() && this.peek() !== "\n") {
         this.advance();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private skipWhitespaceAndComments(): void {
+    while (true) {
+      this.skipWhitespace();
+      if (!this.skipComment()) {
+        break;
       }
     }
   }
@@ -199,9 +210,7 @@ export class Lexer {
     const tokens: Token[] = [];
 
     while (this.pos < this.source.length) {
-      this.skipWhitespace();
-      this.skipComment();
-      this.skipWhitespace();
+      this.skipWhitespaceAndComments();
 
       if (this.pos >= this.source.length) break;
 

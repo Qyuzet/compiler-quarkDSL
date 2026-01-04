@@ -570,34 +570,163 @@ while (pc < bytecode.length) {
 
 ### Implementation
 
-**Status:** To be implemented
+**Status:** Complete (TypeScript VM)
 
-**Planned Architecture:**
+**Files:** `quarkdsl-web/lib/vm/`
 
-- Stack-based VM for simplicity
-- Direct interpretation of SSA IR
-- No separate bytecode encoding (IR is the bytecode)
-- Support for quantum and GPU simulation
+**Architecture:**
+
+- Stack-based VM for simplicity and portability
+- Custom bytecode format (not SSA IR)
+- Full quantum state vector simulation
+- Browser and Node.js compatible
 
 **VM Components:**
 
-- Operand Stack: For expression evaluation
-- Local Variables: For SSA variables
-- Quantum State: For quantum register simulation
-- GPU Memory: For array/tensor simulation
-- Call Stack: For function calls
+| Component         | File                   | Description                      |
+| ----------------- | ---------------------- | -------------------------------- |
+| Lexer             | `lexer.ts`             | DFA-based tokenizer              |
+| Parser            | `parser.ts`            | Recursive descent parser         |
+| Compiler          | `compiler.ts`          | AST to bytecode compiler         |
+| VM                | `vm.ts`                | Stack-based bytecode interpreter |
+| Quantum Simulator | `quantum-simulator.ts` | 8-qubit state vector simulator   |
+| Quantum Gates     | `quantum-gates.ts`     | Gate implementations             |
+
+**Bytecode Opcodes:**
+
+```typescript
+enum Opcode {
+  // Stack operations
+  PUSH,
+  POP,
+  DUP,
+  // Arithmetic
+  ADD,
+  SUB,
+  MUL,
+  DIV,
+  MOD,
+  NEG,
+  // Comparison
+  EQ,
+  NE,
+  LT,
+  LE,
+  GT,
+  GE,
+  // Logic
+  AND,
+  OR,
+  NOT,
+  // Variables
+  LOAD,
+  STORE,
+  LOAD_GLOBAL,
+  STORE_GLOBAL,
+  // Control flow
+  JUMP,
+  JUMP_IF_FALSE,
+  CALL,
+  RETURN,
+  // Arrays
+  ARRAY_NEW,
+  ARRAY_GET,
+  ARRAY_SET,
+  ARRAY_LEN,
+  // Quantum operations
+  QUANTUM_H,
+  QUANTUM_X,
+  QUANTUM_Y,
+  QUANTUM_Z,
+  QUANTUM_RX,
+  QUANTUM_RY,
+  QUANTUM_RZ,
+  QUANTUM_CNOT,
+  QUANTUM_SWAP,
+  QUANTUM_TOFFOLI,
+  QUANTUM_MEASURE,
+  QUANTUM_RESET,
+}
+```
+
+**Quantum Simulator:**
+
+The quantum simulator maintains a full state vector for up to 8 qubits (256 complex amplitudes):
+
+```typescript
+class QuantumSimulator {
+  private stateVector: Complex[]; // 2^n amplitudes
+  private numQubits: number; // Max 8 qubits
+
+  applyGate(gate: QuantumGate, targets: number[]): void;
+  measure(qubit: number): number; // Returns 0 or 1
+  reset(): void;
+}
+```
+
+**Quantum Gates Implemented:**
+
+| Gate      | Matrix         | Description                           |
+| --------- | -------------- | ------------------------------------- |
+| H         | Hadamard       | Creates superposition                 |
+| X         | Pauli-X        | Bit flip (NOT)                        |
+| Y         | Pauli-Y        | Bit and phase flip                    |
+| Z         | Pauli-Z        | Phase flip                            |
+| RX(theta) | X-rotation     | Rotation around X-axis                |
+| RY(theta) | Y-rotation     | Rotation around Y-axis                |
+| RZ(theta) | Z-rotation     | Rotation around Z-axis                |
+| CNOT      | Controlled-NOT | Two-qubit entangling gate             |
+| SWAP      | Swap           | Exchanges two qubits                  |
+| Toffoli   | CCX            | Three-qubit controlled-controlled-NOT |
 
 **Execution Model:**
 
 ```
-IR Instructions → VM Interpreter → Results
+QuarkDSL Source
+    ↓
+Lexer → Tokens
+    ↓
+Parser → AST
+    ↓
+Compiler → Bytecode
+    ↓
+VM Execution
+    ├── Classical: Stack-based computation
+    ├── GPU: Array operations (JavaScript simulation)
+    └── Quantum: State vector simulation
 ```
 
-The VM will provide an alternative execution path alongside code generation backends.
+**Example Execution:**
+
+```typescript
+// QuarkDSL code
+@quantum
+fn bell_state() -> int {
+    h(0);
+    cx(0, 1);
+    return measure(0);
+}
+
+// Compiled bytecode
+[
+  QUANTUM_H, 0,        // Apply H to qubit 0
+  QUANTUM_CNOT, 0, 1,  // Apply CNOT with control=0, target=1
+  QUANTUM_MEASURE, 0,  // Measure qubit 0
+  RETURN               // Return measurement result
+]
+
+// VM execution
+// 1. Initialize |00> state
+// 2. H gate: |00> -> (|00> + |10>)/sqrt(2)
+// 3. CNOT: (|00> + |10>)/sqrt(2) -> (|00> + |11>)/sqrt(2)
+// 4. Measure: Returns 0 or 1 with 50% probability each
+```
 
 ---
 
 ## Compiler Pipeline Summary
+
+### Native Compiler (Rust)
 
 ```
 Source Code (.tgpu)
@@ -621,9 +750,27 @@ Source Code (.tgpu)
     ├─→ WGSL Backend → .wgsl (GPU)
     ├─→ Quantum Backend → .py (Qiskit)
     └─→ Orchestrator Backend → .py (Hybrid)
+```
+
+### TypeScript VM
+
+```
+Source Code (.tgpu)
     ↓
-[7. Runtime (Optional)]
-    VM Interpreter → Direct Execution
+[1. Lexical Analysis]
+    DFA Lexer → Tokens
+    ↓
+[2. Syntax Analysis]
+    RDP Parser → AST
+    ↓
+[3. Compilation]
+    AST → Bytecode
+    ↓
+[4. Execution]
+    Stack-based VM
+    ├─→ Classical operations
+    ├─→ GPU simulation (arrays)
+    └─→ Quantum simulation (state vector)
 ```
 
 ---

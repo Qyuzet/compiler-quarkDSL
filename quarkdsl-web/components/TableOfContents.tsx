@@ -8,7 +8,17 @@ interface TOCItem {
   level: number;
 }
 
-export default function TableOfContents({ content }: { content: string }) {
+interface TableOfContentsProps {
+  content: string;
+  onNavigate?: () => void;
+  scrollContainerId?: string;
+}
+
+export default function TableOfContents({
+  content,
+  onNavigate,
+  scrollContainerId,
+}: TableOfContentsProps) {
   const [toc, setToc] = useState<TOCItem[]>([]);
   const [activeId, setActiveId] = useState<string>("");
 
@@ -56,7 +66,19 @@ export default function TableOfContents({ content }: { content: string }) {
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (scrollContainerId) {
+        const container = document.getElementById(scrollContainerId);
+        const viewport = container?.querySelector(
+          "[data-radix-scroll-area-viewport]"
+        );
+        if (viewport) {
+          const elementTop = element.offsetTop;
+          viewport.scrollTo({ top: elementTop - 20, behavior: "smooth" });
+        }
+      } else {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      onNavigate?.();
     }
   };
 

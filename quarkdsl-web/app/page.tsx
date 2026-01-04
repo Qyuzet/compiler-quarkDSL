@@ -836,35 +836,39 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <div className="container mx-auto p-3 max-w-7xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-left border-l-4 border-blue-600 pl-4 py-2">
-            <h1 className="text-2xl font-bold mb-0.5 text-neutral-900 dark:text-neutral-100">
-              QuarkDSL Online Compiler
+      <div className="container mx-auto p-2 sm:p-3 max-w-7xl">
+        <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+          <div className="text-left border-l-4 border-blue-600 pl-3 sm:pl-4 py-1 sm:py-2">
+            <h1 className="text-lg sm:text-2xl font-bold mb-0.5 text-neutral-900 dark:text-neutral-100">
+              <span className="hidden sm:inline">QuarkDSL Online Compiler</span>
+              <span className="sm:hidden">QuarkDSL</span>
             </h1>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Hybrid Quantum-Classical Programming Language
+            <p className="text-[10px] sm:text-xs text-neutral-600 dark:text-neutral-400">
+              <span className="hidden sm:inline">
+                Hybrid Quantum-Classical Programming Language
+              </span>
+              <span className="sm:hidden">Quantum-Classical Compiler</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-900 rounded-lg p-1">
+          <div className="flex items-center gap-1 sm:gap-2 bg-neutral-100 dark:bg-neutral-900 rounded-lg p-1 self-start sm:self-auto">
             <Button
               variant={viewMode === "workspace" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("workspace")}
-              className="h-8 text-xs"
+              className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3"
             >
-              <Code className="w-3 h-3 mr-1" />
-              Workspace
+              <Code className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Workspace</span>
             </Button>
             <Button
               variant={viewMode === "documentation" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("documentation")}
-              className="h-8 text-xs"
+              className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3"
             >
-              <BookOpen className="w-3 h-3 mr-1" />
-              Documentation
+              <BookOpen className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Documentation</span>
             </Button>
           </div>
         </div>
